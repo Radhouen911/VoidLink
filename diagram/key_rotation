@@ -1,0 +1,22 @@
+@startuml
+title Sequence Diagram - Key Rotation (Forward Secrecy Lite)
+
+participant "Client A" as ClientA
+participant "Crypto A" as CryptoA
+participant "Server" as Server
+participant "Client B" as ClientB
+participant "Crypto B" as CryptoB
+
+ClientA -> CryptoA : messageCount >= threshold
+CryptoA -> CryptoA : newKey = HKDF(oldKey)
+CryptoA -> CryptoA : encrypt newKey\nwith oldKey
+ClientA -> Server : rekey message\n[WebSocket]
+Server -> ClientB : rekey message
+ClientB -> CryptoB : decrypt newKey
+CryptoB -> CryptoB : delete oldKey
+
+note bottom
+🔄 Partial forward secrecy\nOld keys destroyed
+end note
+
+@enduml

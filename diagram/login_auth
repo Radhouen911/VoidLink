@@ -1,0 +1,35 @@
+@startuml
+title Sequence Diagram - Login & Authentication
+
+actor User
+participant "Browser Client" as Client
+participant "Crypto Module" as Crypto
+participant "Server" as Server
+
+User -> Client : Enter passphrase
+Client -> Crypto : decryptPrivateKey(passphrase)
+
+alt Passphrase correct
+  Client -> Server : request challenge
+  Server -> Client : auth challenge
+  Client -> Crypto : sign(challenge)
+  Client -> Server : signature
+  Server -> Server : verify signature
+  Server -> Client : auth success\n(session token)
+else Passphrase incorrect
+  Crypto -> Client : decryption failed
+  Client -> User : Authentication failed\nWrong passphrase
+end
+
+opt Inactivity timeout (15 min)
+  Client -> Crypto : wipeKeyFromMemory()
+  Client -> User : "Session expired\nRe-enter passphrase"
+end
+
+note right of Crypto
+⚠️ No passwords transmitted
+🔒 Keys only in memory
+🔄 Auto-wipe on timeout
+end note
+
+@enduml

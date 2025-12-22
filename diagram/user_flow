@@ -1,0 +1,25 @@
+@startuml
+title Activity Diagram - User Flow
+
+start
+:Open App;
+
+if (New user?) then (yes)
+  :Create account;
+  :Download encrypted backup;
+endif
+
+:Login;
+:Add contact;
+
+if (Contact verified?) then (yes)
+  :Secure chat;
+else (no)
+  :Chat (unverified warning);
+endif
+
+:Send / receive messages;
+:Logout;
+
+stop
+@enduml

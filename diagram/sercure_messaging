@@ -1,0 +1,55 @@
+@startuml
+title Secure Message Exchange
+
+actor UserA
+participant ClientA
+participant CryptoA
+participant LocalStorage
+participant Server
+database Database
+participant ClientB
+participant CryptoB
+actor UserB
+
+UserA -> ClientA : Start chat with Bob
+ClientA -> Server : GET /users/bob
+Server -> Database : query user
+Database -> Server : public key
+Server -> ClientA : public key
+ClientA -> LocalStorage : store contact key
+
+alt User not found
+  Server -> ClientA : error
+  ClientA -> UserA : user does not exist
+end
+
+UserA -> ClientA : Send "Hello"
+ClientA -> CryptoA : generate session key
+CryptoA -> CryptoA : encrypt session key
+ClientA -> LocalStorage : store draft
+ClientA -> Server : send encrypted session key
+Server -> Database : store ciphertext
+
+alt ClientB online
+  Server -> ClientB : deliver encrypted key
+else ClientB offline
+  Server -> Database : mark undelivered
+end
+
+ClientB -> CryptoB : decrypt session key
+
+UserA -> ClientA : Send message
+ClientA -> CryptoA : encrypt message
+ClientA -> Server : send ciphertext
+Server -> Database : store ciphertext
+Server -> ClientB : forward ciphertext
+ClientB -> CryptoB : decrypt message
+CryptoB -> CryptoB : verify signature
+
+alt Signature valid
+  ClientB -> UserB : display message
+else Signature invalid
+  ClientB -> UserB : warning
+end
+
+@enduml
