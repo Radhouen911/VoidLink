@@ -126,17 +126,6 @@ These aren't just pretty pictures - they show the trust boundaries, error handli
 
 We're honest about what we can and can't protect against.
 
-## 🧪 Project Status
-
-This is a **design-focused prototype** that demonstrates:
-
-- How to think about system architecture
-- Real-world security vs usability tradeoffs
-- Clear technical communication
-- Defensible security decisions
-
-The goal isn't to build the biggest system, but to build a _well-designed_ one.
-
 ## 👥 The Team Behind VoidLink
 
 **Mohamed Radhouen Boufateh** - Lead Developer  
