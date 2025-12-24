@@ -128,8 +128,9 @@ We're honest about what we can and can't protect against.
 
 ## 👥 The Team Behind VoidLink
 
-**Mohamed Radhouen Boufateh** 
-**Abdelkader Ben Nejma**
+**Mohamed Radhouen Boufateh** - 
+**Abdelkader Ben Nejma** - 
+
 **Basma K'hil** - University Instructor & Advisor
 
 ## 🎓 Why This Matters
