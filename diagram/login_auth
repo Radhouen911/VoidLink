@@ -1,35 +1,42 @@
 @startuml
-title Sequence Diagram - Login & Authentication
+title Login Flow with Optional Cloud Key
 
 actor User
-participant "Browser Client" as Client
+participant Browser
 participant "Crypto Module" as Crypto
-participant "Server" as Server
+participant "Local Storage\n(IndexedDB)" as LS
+participant Server
+database Database
 
-User -> Client : Enter passphrase
-Client -> Crypto : decryptPrivateKey(passphrase)
+User -> Browser: Login + passphrase
+
+alt Local-only key mode
+  Browser -> LS: loadEncryptedPrivateKey()
+else Cloud-backed key mode
+  Browser -> Server: fetchEncryptedKey()
+  Server -> Database: retrieveEncryptedKey()
+  Server -> Browser: encryptedPrivateKey
+end
+
+Browser -> Crypto: decryptPrivateKey(passphrase)
 
 alt Passphrase correct
-  Client -> Server : request challenge
-  Server -> Client : auth challenge
-  Client -> Crypto : sign(challenge)
-  Client -> Server : signature
-  Server -> Server : verify signature
-  Server -> Client : auth success\n(session token)
+  Crypto -> Browser: privateKey in memory
+  Browser -> Server: signChallenge()
+  Server -> Browser: authentication success
 else Passphrase incorrect
-  Crypto -> Client : decryption failed
-  Client -> User : Authentication failed\nWrong passphrase
+  Crypto -> Browser: decryption failed
+  Browser -> User: login error
 end
 
-opt Inactivity timeout (15 min)
-  Client -> Crypto : wipeKeyFromMemory()
-  Client -> User : "Session expired\nRe-enter passphrase"
+opt After inactivity timeout (15 min)
+  Browser -> Crypto: wipePrivateKeyFromMemory()
 end
 
-note right of Crypto
-⚠️ No passwords transmitted
-🔒 Keys only in memory
-🔄 Auto-wipe on timeout
+note right of Browser
+Decrypted private key
+exists only in memory
+during active session
 end note
 
 @enduml

@@ -1,0 +1,43 @@
+@startuml
+title System Components & Trust Boundaries
+
+package "Client (Trusted)" {
+  component Browser
+  component "Crypto Module"
+  component "Local Storage\n(IndexedDB)"
+
+  Browser --> "Crypto Module"
+  "Crypto Module" --> "Local Storage\n(IndexedDB)"
+}
+
+package "Server (Untrusted)" {
+  component API
+  database Database
+}
+
+Browser --> API : HTTPS / WebSocket
+API --> Database
+
+note bottom of "Local Storage\n(IndexedDB)"
+Stores:
+- Encrypted Private Key (always)
+- Encrypted Messages
+- Public Contact Keys
+- Draft Messages (plaintext)
+end note
+
+note bottom of Database
+Stores:
+- Public Keys
+- Ciphertexts
+- Encrypted Private Key (optional)
+end note
+
+note top of API
+Server never sees:
+- Passphrases
+- Plaintext private keys
+- Plaintext messages
+end note
+
+@enduml

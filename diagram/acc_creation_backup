@@ -1,34 +1,39 @@
 @startuml
-title Sequence Diagram - Account Creation & Backup
+title Account Creation & Key Management Selection
 
 actor User
-participant "Browser Client" as Client
+participant Browser
 participant "Crypto Module" as Crypto
-participant "Local Storage" as LS
-participant "Server" as Server
+participant "Local Storage\n(IndexedDB)" as LS
+participant Server
 database Database
 
-User -> Client : Create account\n(passphrase)
-Client -> Crypto : generateKeyPair()
-Crypto -> Crypto : encryptPrivateKey\nAES-GCM(passphrase)
-Crypto -> LS : store(encryptedPrivateKey, publicKey)
+User -> Browser: Create account + passphrase
+Browser -> Crypto: generateKeyPair()
+Crypto -> Crypto: encryptPrivateKey(passphrase)
 
-LS -> Client : createBackupFile()
-Client -> User : auto-download backup file
+Browser -> User: Choose key mode
 
-Client -> Server : register(username, publicKey)\n[REST/HTTPS]
-Server -> Database : insert(username, publicKey)
-
-alt Username available
-  Server -> Client : success
-  Client -> User : Account created
-else Username taken
-  Server -> Client : error
-  Client -> User : Choose another username
+alt Local-only key mode (Recommended)
+  Crypto -> LS: store(encryptedPrivateKey)
+else Cloud-backed key mode (Optional)
+  Crypto -> LS: store(encryptedPrivateKey)
+  Browser -> Server: uploadEncryptedKey(encryptedPrivateKey)
+  Server -> Database: storeEncryptedKey()
 end
 
-note right
-🔒 Private key never sent to server
+Browser -> Server: register(username, publicKey)
+Server -> Database: store(username, publicKey)
+
+alt Registration successful
+  Server -> Browser: success
+else Username taken
+  Server -> Browser: error
+end
+
+note right of Crypto
+Private key is never stored
+or transmitted in plaintext
 end note
 
 @enduml
