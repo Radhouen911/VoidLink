@@ -1,0 +1,23 @@
+{
+  "name": "voidlink-server",
+  "version": "1.0.0",
+  "description": "VoidLink - Zero-trust secure messaging server",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "init-db": "node src/database/init.js"
+  },
+  "dependencies": {
+    "express": "^4.18.0",
+    "cors": "^2.8.5",
+    "helmet": "^6.0.0",
+    "pg": "^8.8.0",
+    "ws": "^8.12.0",
+    "uuid": "^9.0.0",
+    "bcrypt": "^5.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.0"
+  }
+}

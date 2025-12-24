@@ -1,0 +1,70 @@
+version: "3.8"
+
+services:
+  # PostgreSQL Database
+  database:
+    image: postgres:15-alpine
+    container_name: voidlink-db
+    environment:
+      POSTGRES_DB: voidlink
+      POSTGRES_USER: voidlink
+      POSTGRES_PASSWORD: voidlink_secure_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./server/src/database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - voidlink-network
+    restart: unless-stopped
+
+  # Backend Server
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: voidlink-backend
+    environment:
+      NODE_ENV: development
+      PORT: 5000
+      DB_HOST: database
+      DB_PORT: 5432
+      DB_NAME: voidlink
+      DB_USER: voidlink
+      DB_PASSWORD: voidlink_secure_pass
+    ports:
+      - "5000:5000"
+    depends_on:
+      - database
+    networks:
+      - voidlink-network
+    volumes:
+      - ./server:/app
+      - /app/node_modules
+    restart: unless-stopped
+
+  # Frontend Client
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: voidlink-frontend
+    environment:
+      VITE_API_URL: http://localhost:5000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - voidlink-network
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  voidlink-network:
+    driver: bridge
