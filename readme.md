@@ -128,8 +128,8 @@ We're honest about what we can and can't protect against.
 
 ## 👥 The Team Behind VoidLink
 
-**Mohamed Radhouen Boufateh** - Lead Developer  
-**Abdelkader Ben Nejma** - Security Architecture  
+**Mohamed Radhouen Boufateh** 
+**Abdelkader Ben Nejma**
 **Basma K'hil** - University Instructor & Advisor
 
 ## 🎓 Why This Matters
