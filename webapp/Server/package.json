@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "init-db": "node src/database/init.js"
+    "init-db": "node src/database/init.js",
+    "test": "node test/test-complete-flow.js",
+    "test:websocket": "node test/test-websocket.js"
   },
   "dependencies": {
     "axios": "^1.13.2",

@@ -2,11 +2,13 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const { createServer } = require("http");
-const WebSocket = require("ws");
+const WebSocketManager = require("./websocket/websocket-manager");
 
 const app = express();
 const server = createServer(app);
-const wss = new WebSocket.Server({ server });
+
+// Initialize WebSocket Manager with two-layer authentication
+const wsManager = new WebSocketManager(server);
 
 // Middleware
 app.use(helmet());
@@ -25,41 +27,12 @@ app.use("/api/users", require("./routes/users"));
 app.use("/api/messages", require("./routes/messages"));
 app.use("/api/contacts", require("./routes/contacts"));
 
-// WebSocket for real-time messaging (TODO: Implement crypto session validation)
-wss.on("connection", (ws, req) => {
-  console.log("Client connected from:", req.socket.remoteAddress);
-
-  ws.on("message", (data) => {
-    try {
-      const message = JSON.parse(data);
-      console.log("Received WebSocket message:", message.type);
-
-      // TODO: Implement real-time message routing with crypto session validation
-      // For now, just echo back for testing
-      ws.send(
-        JSON.stringify({
-          type: "echo",
-          data: message,
-          timestamp: new Date().toISOString(),
-        })
-      );
-    } catch (error) {
-      console.error("Invalid WebSocket message format:", error);
-      ws.send(
-        JSON.stringify({
-          type: "error",
-          message: "Invalid message format",
-        })
-      );
-    }
-  });
-
-  ws.on("close", () => {
-    console.log("Client disconnected");
-  });
-
-  ws.on("error", (error) => {
-    console.error("WebSocket error:", error);
+// WebSocket statistics endpoint
+app.get("/api/websocket/stats", (req, res) => {
+  res.json({
+    success: true,
+    data: wsManager.getStats(),
+    timestamp: new Date().toISOString(),
   });
 });
 
@@ -68,7 +41,12 @@ app.get("/api/health", (req, res) => {
   res.json({
     status: "ok",
     service: "VoidLink Server",
-    version: "2.0.0-two-layer-auth",
+    version: "2.0.0-websocket-realtime",
+    websocket: {
+      enabled: true,
+      path: "/ws",
+      authentication: "two-layer",
+    },
     timestamp: new Date().toISOString(),
   });
 });
@@ -95,7 +73,30 @@ const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {
   console.log(`🔐 VoidLink Server v2.0 running on port ${PORT}`);
-  console.log(`📡 WebSocket server ready for real-time messaging`);
+  console.log(`📡 WebSocket server ready at ws://localhost:${PORT}/ws`);
   console.log(`🛡️  Two-layer authentication system active`);
+  console.log(`⚡ Real-time messaging with crypto session validation`);
   console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
+  console.log(
+    `📈 WebSocket stats: http://localhost:${PORT}/api/websocket/stats`
+  );
+});
+
+// Graceful shutdown
+process.on("SIGTERM", async () => {
+  console.log("🛑 SIGTERM received, shutting down gracefully...");
+  await wsManager.shutdown();
+  server.close(() => {
+    console.log("✅ Server shutdown complete");
+    process.exit(0);
+  });
+});
+
+process.on("SIGINT", async () => {
+  console.log("🛑 SIGINT received, shutting down gracefully...");
+  await wsManager.shutdown();
+  server.close(() => {
+    console.log("✅ Server shutdown complete");
+    process.exit(0);
+  });
 });
