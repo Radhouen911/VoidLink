@@ -2,6 +2,7 @@ const WebSocket = require("ws");
 const WebSocketAuth = require("./websocket-auth");
 const ConnectionManager = require("./connection-manager");
 const MessageHandlers = require("./message-handlers");
+const MessageQueueService = require("../services/message-queue-service");
 
 /**
  * WebSocket Manager
@@ -11,7 +12,11 @@ class WebSocketManager {
   constructor(server) {
     this.server = server;
     this.connectionManager = new ConnectionManager();
-    this.messageHandlers = new MessageHandlers(this.connectionManager);
+    this.messageQueueService = new MessageQueueService(this.connectionManager);
+    this.messageHandlers = new MessageHandlers(
+      this.connectionManager,
+      this.messageQueueService
+    );
 
     // Create WebSocket server
     this.wss = new WebSocket.Server({
@@ -23,8 +28,11 @@ class WebSocketManager {
     this.setupEventHandlers();
     this.startCleanupInterval();
 
+    // Start message queue service
+    this.messageQueueService.start();
+
     console.log(
-      "🚀 WebSocket Manager initialized with two-layer authentication"
+      "🚀 WebSocket Manager initialized with two-layer authentication and message queue"
     );
   }
 
@@ -65,6 +73,11 @@ class WebSocketManager {
           ws.close(1011, "Failed to register connection");
           return;
         }
+
+        // Notify message queue service about user coming online
+        await this.messageQueueService.onUserOnline(
+          userContext.cryptoProfileId
+        );
 
         // Setup connection event handlers
         this.setupConnectionHandlers(ws, userContext);
@@ -124,7 +137,18 @@ class WebSocketManager {
       console.log(
         `🔌 WebSocket disconnected: ${userContext.username} (${code}: ${reason})`
       );
-      this.connectionManager.removeConnection(ws);
+
+      // Remove connection and check if user went offline
+      const wasLastConnection = this.connectionManager.removeConnection(ws);
+
+      // If this was the user's last connection, notify message queue service
+      if (wasLastConnection) {
+        this.messageQueueService
+          .onUserOffline(userContext.cryptoProfileId)
+          .catch((error) => {
+            console.error("Error handling user offline:", error);
+          });
+      }
     });
 
     // Handle connection errors
@@ -250,6 +274,9 @@ class WebSocketManager {
    */
   async shutdown() {
     console.log("🛑 Shutting down WebSocket server...");
+
+    // Stop message queue service
+    this.messageQueueService.stop();
 
     // Notify all clients about shutdown
     this.broadcastSystemMessage({

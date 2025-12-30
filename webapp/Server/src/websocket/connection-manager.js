@@ -34,6 +34,11 @@ class ConnectionManager {
     try {
       const { cryptoProfileId, username } = userContext;
 
+      // Check if user was previously offline
+      const wasOffline =
+        !this.connections.has(cryptoProfileId) ||
+        this.connections.get(cryptoProfileId).size === 0;
+
       // Initialize connections set for user if not exists
       if (!this.connections.has(cryptoProfileId)) {
         this.connections.set(cryptoProfileId, new Set());
@@ -69,8 +74,10 @@ class ConnectionManager {
         `✅ User ${username} connected (${this.stats.totalConnections} total connections)`
       );
 
-      // Notify contacts about user coming online
-      this.broadcastPresenceUpdate(cryptoProfileId, "online");
+      // Notify contacts about user coming online (only if was previously offline)
+      if (wasOffline) {
+        this.broadcastPresenceUpdate(cryptoProfileId, "online");
+      }
 
       return true;
     } catch (error) {
@@ -134,7 +141,8 @@ class ConnectionManager {
         `❌ User ${username} disconnected (${this.stats.totalConnections} total connections)`
       );
 
-      return true;
+      // Return whether this was the user's last connection
+      return userConnections ? userConnections.size === 0 : true;
     } catch (error) {
       console.error("Error removing WebSocket connection:", error);
       return false;

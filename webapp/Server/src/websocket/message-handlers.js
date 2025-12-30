@@ -5,8 +5,9 @@ const db = require("../database/db");
  * Handles different types of real-time messaging events
  */
 class MessageHandlers {
-  constructor(connectionManager) {
+  constructor(connectionManager, messageQueueService) {
     this.connectionManager = connectionManager;
+    this.messageQueueService = messageQueueService;
   }
 
   /**
@@ -147,24 +148,46 @@ class MessageHandlers {
         timestamp: new Date().toISOString(),
       };
 
-      // Send to recipient if online
+      // Send to recipient if online, otherwise queue for offline delivery
       const deliveredCount = this.connectionManager.broadcastToUser(
         recipient.crypto_profile_id,
         realtimeMessage
       );
+
+      let queueResult = null;
+      if (deliveredCount === 0) {
+        // Recipient is offline, queue the message
+        try {
+          queueResult = await this.messageQueueService.queueMessage(
+            message.id,
+            recipient.crypto_profile_id,
+            0 // Default priority
+          );
+          console.log(
+            `📬 Message ${message.id} queued for offline user ${recipientUsername}`
+          );
+        } catch (error) {
+          console.error("Failed to queue message:", error);
+          // Continue anyway - message is stored in database
+        }
+      }
 
       // Send confirmation to sender
       this.sendSuccess(ws, "message_sent", {
         messageId: message.id,
         recipientUsername: recipientUsername,
         deliveredRealtime: deliveredCount > 0,
+        queued: queueResult ? queueResult.queued : false,
+        queuedAt: queueResult ? queueResult.queuedAt : null,
         sentAt: message.created_at,
       });
 
       console.log(
         `📨 Message ${message.id} sent from ${
           userContext.username
-        } to ${recipientUsername} (realtime: ${deliveredCount > 0})`
+        } to ${recipientUsername} (realtime: ${deliveredCount > 0}, queued: ${
+          queueResult?.queued || false
+        })`
       );
 
       return true;

@@ -83,7 +83,7 @@ CREATE TABLE IF NOT EXISTS auth_challenges (
 -- APPLICATION DATA (Requires Crypto Authentication)
 -- ============================================================================
 
--- Messages table - stores encrypted messages (zero-trust)
+-- Messages table - stores encrypted messages (zero-trust) with enhanced delivery tracking
 CREATE TABLE IF NOT EXISTS messages (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     sender_crypto_id UUID NOT NULL,
@@ -91,11 +91,17 @@ CREATE TABLE IF NOT EXISTS messages (
     encrypted_payload TEXT NOT NULL,
     message_type VARCHAR(20) DEFAULT 'message',
     delivered BOOLEAN DEFAULT FALSE,
+    delivered_at TIMESTAMP,
+    read_at TIMESTAMP,
     deleted_by_sender BOOLEAN DEFAULT FALSE,
     deleted_by_recipient BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    delivered_at TIMESTAMP,
     expires_at TIMESTAMP,
+    -- New fields for message queuing
+    delivery_attempts INTEGER DEFAULT 0,
+    last_delivery_attempt TIMESTAMP,
+    delivery_status VARCHAR(20) DEFAULT 'pending' CHECK (delivery_status IN ('pending', 'delivered', 'failed', 'expired')),
+    priority INTEGER DEFAULT 0, -- Higher numbers = higher priority
     FOREIGN KEY (sender_crypto_id) REFERENCES crypto_profiles(id) ON DELETE CASCADE,
     FOREIGN KEY (recipient_crypto_id) REFERENCES crypto_profiles(id) ON DELETE CASCADE
 );
@@ -111,6 +117,33 @@ CREATE TABLE IF NOT EXISTS contacts (
     FOREIGN KEY (owner_crypto_id) REFERENCES crypto_profiles(id) ON DELETE CASCADE,
     FOREIGN KEY (contact_crypto_id) REFERENCES crypto_profiles(id) ON DELETE CASCADE,
     UNIQUE(owner_crypto_id, contact_crypto_id)
+);
+
+-- Message queue table - manages offline message delivery
+CREATE TABLE IF NOT EXISTS message_queue (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    message_id UUID NOT NULL,
+    recipient_crypto_id UUID NOT NULL,
+    queue_status VARCHAR(20) DEFAULT 'queued' CHECK (queue_status IN ('queued', 'processing', 'delivered', 'failed', 'expired')),
+    priority INTEGER DEFAULT 0,
+    retry_count INTEGER DEFAULT 0,
+    max_retries INTEGER DEFAULT 3,
+    next_retry_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    processed_at TIMESTAMP,
+    error_message TEXT,
+    FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE,
+    FOREIGN KEY (recipient_crypto_id) REFERENCES crypto_profiles(id) ON DELETE CASCADE
+);
+
+-- User presence tracking for queue delivery optimization
+CREATE TABLE IF NOT EXISTS user_presence (
+    crypto_profile_id UUID PRIMARY KEY,
+    status VARCHAR(20) DEFAULT 'offline' CHECK (status IN ('online', 'away', 'busy', 'offline')),
+    last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    connection_count INTEGER DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (crypto_profile_id) REFERENCES crypto_profiles(id) ON DELETE CASCADE
 );
 
 -- ============================================================================
@@ -153,13 +186,30 @@ CREATE INDEX IF NOT EXISTS idx_crypto_profiles_account ON crypto_profiles(accoun
 CREATE INDEX IF NOT EXISTS idx_crypto_profiles_backup ON crypto_profiles(cloud_backup_enabled) 
     WHERE cloud_backup_enabled = TRUE;
 
--- Message indexes (with soft delete filtering)
+-- Message indexes (with soft delete filtering and delivery tracking)
 CREATE INDEX IF NOT EXISTS idx_messages_recipient_time ON messages(recipient_crypto_id, created_at DESC) 
     WHERE deleted_by_recipient = FALSE;
 CREATE INDEX IF NOT EXISTS idx_messages_sender_time ON messages(sender_crypto_id, created_at DESC) 
     WHERE deleted_by_sender = FALSE;
 CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(sender_crypto_id, recipient_crypto_id, created_at DESC) 
     WHERE deleted_by_sender = FALSE AND deleted_by_recipient = FALSE;
+CREATE INDEX IF NOT EXISTS idx_messages_delivery_status ON messages(delivery_status, created_at) 
+    WHERE delivery_status IN ('pending', 'failed');
+CREATE INDEX IF NOT EXISTS idx_messages_undelivered ON messages(recipient_crypto_id, delivered, created_at) 
+    WHERE delivered = FALSE;
+
+-- Message queue indexes for efficient processing
+CREATE INDEX IF NOT EXISTS idx_message_queue_recipient ON message_queue(recipient_crypto_id, queue_status);
+CREATE INDEX IF NOT EXISTS idx_message_queue_processing ON message_queue(queue_status, next_retry_at) 
+    WHERE queue_status IN ('queued', 'failed');
+CREATE INDEX IF NOT EXISTS idx_message_queue_priority ON message_queue(priority DESC, created_at ASC) 
+    WHERE queue_status = 'queued';
+
+-- User presence indexes for quick lookups
+CREATE INDEX IF NOT EXISTS idx_user_presence_status ON user_presence(status, last_seen) 
+    WHERE status = 'online';
+CREATE INDEX IF NOT EXISTS idx_user_presence_updated ON user_presence(updated_at) 
+    WHERE status != 'offline';
 
 -- Contact indexes
 CREATE INDEX IF NOT EXISTS idx_contacts_owner ON contacts(owner_crypto_id);
@@ -254,3 +304,95 @@ COMMENT ON TABLE audit_events IS 'Security audit log - tracks both account and c
 COMMENT ON TABLE account_sessions IS 'Traditional session management for account operations';
 COMMENT ON TABLE crypto_sessions IS 'Challenge-response sessions for cryptographic operations';
 COMMENT ON COLUMN crypto_profiles.encrypted_private_key_backup IS 'Optional encrypted private key backup - encrypted by user passphrase';
+
+-- ============================================================================
+-- MESSAGE QUEUE FUNCTIONS
+-- ============================================================================
+
+-- Clean expired messages and failed queue entries
+CREATE OR REPLACE FUNCTION cleanup_expired_messages()
+RETURNS INTEGER AS $$
+DECLARE
+    deleted_count INTEGER;
+BEGIN
+    -- Clean expired messages
+    DELETE FROM messages 
+    WHERE expires_at < CURRENT_TIMESTAMP;
+    
+    GET DIAGNOSTICS deleted_count = ROW_COUNT;
+    
+    -- Clean failed queue entries that exceeded max retries
+    DELETE FROM message_queue 
+    WHERE queue_status = 'failed' 
+      AND retry_count >= max_retries 
+      AND processed_at < CURRENT_TIMESTAMP - INTERVAL '24 hours';
+    
+    -- Clean expired queue entries
+    DELETE FROM message_queue 
+    WHERE queue_status = 'expired';
+    
+    RETURN deleted_count;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Process message queue for a specific user
+CREATE OR REPLACE FUNCTION get_queued_messages(user_crypto_id UUID)
+RETURNS TABLE(
+    queue_id UUID,
+    message_id UUID,
+    encrypted_payload TEXT,
+    message_type VARCHAR(20),
+    sender_crypto_id UUID,
+    created_at TIMESTAMP,
+    priority INTEGER
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        mq.id,
+        m.id,
+        m.encrypted_payload,
+        m.message_type,
+        m.sender_crypto_id,
+        m.created_at,
+        mq.priority
+    FROM message_queue mq
+    JOIN messages m ON mq.message_id = m.id
+    WHERE mq.recipient_crypto_id = user_crypto_id
+      AND mq.queue_status = 'queued'
+      AND mq.next_retry_at <= CURRENT_TIMESTAMP
+    ORDER BY mq.priority DESC, mq.created_at ASC;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Update user presence status
+CREATE OR REPLACE FUNCTION update_user_presence(
+    user_crypto_id UUID,
+    new_status VARCHAR(20),
+    connection_delta INTEGER DEFAULT 0
+)
+RETURNS VOID AS $$
+BEGIN
+    INSERT INTO user_presence (crypto_profile_id, status, connection_count, updated_at)
+    VALUES (user_crypto_id, new_status, GREATEST(0, connection_delta), CURRENT_TIMESTAMP)
+    ON CONFLICT (crypto_profile_id) 
+    DO UPDATE SET 
+        status = EXCLUDED.status,
+        connection_count = GREATEST(0, user_presence.connection_count + connection_delta),
+        last_seen = CASE 
+            WHEN EXCLUDED.status = 'offline' THEN CURRENT_TIMESTAMP
+            ELSE user_presence.last_seen
+        END,
+        updated_at = CURRENT_TIMESTAMP;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ============================================================================
+-- MESSAGE QUEUE COMMENTS
+-- ============================================================================
+
+COMMENT ON TABLE message_queue IS 'Manages offline message delivery with retry logic';
+COMMENT ON TABLE user_presence IS 'Tracks user online/offline status for queue optimization';
+COMMENT ON COLUMN messages.delivery_status IS 'Tracks message delivery state for queue processing';
+COMMENT ON COLUMN message_queue.retry_count IS 'Number of delivery attempts for failed messages';
+COMMENT ON COLUMN user_presence.connection_count IS 'Number of active WebSocket connections for user';
