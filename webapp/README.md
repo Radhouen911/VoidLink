@@ -6,14 +6,14 @@ Base structure for the VoidLink secure messaging web application.
 
 ```
 webapp/
-├── client/          # React frontend
+├── Client/          # React frontend
 │   ├── src/
 │   │   ├── components/
 │   │   ├── App.tsx
 │   │   └── main.tsx
 │   ├── package.json
 │   └── vite.config.ts
-└── server/          # Node.js backend
+└── Server/          # Node.js backend
     ├── src/
     │   ├── database/
     │   ├── routes/
@@ -62,7 +62,7 @@ docker-compose down
 ### Frontend (React)
 
 ```bash
-cd webapp/client
+cd webapp/Client
 npm install
 npm run dev
 ```
@@ -70,7 +70,7 @@ npm run dev
 ### Backend (Node.js)
 
 ```bash
-cd webapp/server
+cd webapp/Server
 npm install
 npm run init-db  # Initialize database
 npm run dev
@@ -78,138 +78,217 @@ npm run dev
 
 Runs on http://localhost:5000
 
-## Database Schema (Zero-Trust Design)
+## Database Schema (Two-Layer Authentication Design)
 
-### Core Principles
+### Core Architecture
+
+VoidLink implements a **two-layer security model** that separates account management from cryptographic operations:
+
+#### **Layer 1: Account Security (Traditional)**
+
+- **Username/password authentication** for account access
+- **Session management** for account operations (24-hour duration)
+- **Account-level permissions** and settings
+
+#### **Layer 2: Crypto Security (Zero-Trust)**
+
+- **Challenge-response authentication** using Ed25519 signatures
+- **Cryptographic sessions** for message operations (15-minute duration)
+- **Zero-trust principle** - server never sees private keys
+
+### Database Tables Overview
+
+#### **Account Management Layer**
+
+- **`accounts`** - Traditional user accounts (username, password_hash)
+- **`account_sessions`** - Account session tokens with IP tracking
+
+#### **Cryptographic Layer**
+
+- **`crypto_profiles`** - Cryptographic identity linked to accounts (1:1 relationship)
+- **`crypto_sessions`** - Challenge-response session tokens (requires account session)
+- **`auth_challenges`** - Temporary cryptographic challenges (5-minute expiry)
+
+#### **Application Data**
+
+- **`messages`** - Encrypted message payloads (linked to crypto profiles)
+- **`contacts`** - User relationships (linked to crypto profiles)
+- **`audit_events`** - Security and activity logging with event categories
+
+### Security Features
 
 - **UUIDs**: All primary keys use UUIDs to prevent enumeration attacks
 - **Opaque Payloads**: Server stores encrypted blobs without interpretation
 - **Soft Deletes**: Messages support soft deletion for better delivery guarantees
-- **Metadata Only**: Audit logs contain no sensitive content or keys
+- **Cascading Security**: Account deletion removes all associated crypto data
+- **Session Hierarchy**: Crypto operations require valid account sessions
+- **Audit Categories**: Comprehensive logging of security, account, crypto, and messaging events
 
-### Tables Overview
+### Key Relationships
 
-#### Users Table
+```
+Account (1) → Crypto Profile (1)
+Account Session (1) → Crypto Sessions (N)
+Crypto Profile (1) → Messages/Contacts (N)
+```
 
-- `id` (UUID) - Primary key
-- `username` - Unique username for routing
-- `public_key` - User's public key for encryption
-- `encrypted_private_key_backup` - Optional encrypted backup (user choice)
-- Timestamps for creation and last activity
+### Performance Optimizations
 
-#### Messages Table (Zero-Trust Core)
-
-- `id` (UUID) - Primary key
-- `sender_id`, `recipient_id` - User references
-- `encrypted_payload` - **Opaque encrypted blob** (server never interprets)
-- `message_type` - Routing hint ('message', 'rekey', 'session_key')
-- `delivered`, `deleted_by_sender`, `deleted_by_recipient` - State flags
-- `expires_at` - Optional TTL for forward secrecy
-
-#### Sessions Table
-
-- `id` (UUID) - Primary key
-- `user_id` - User reference
-- `session_token` - Authentication token
-- `auth_challenge_id` - Reference to used challenge
-- Expiration and activity timestamps
-
-#### Contacts Table
-
-- `id` (UUID) - Primary key
-- `user_id`, `contact_user_id` - User relationships
-- `user_declared_verified` - **Client-side trust flag** (not server-enforced)
-- Contact alias and metadata
-
-#### Auth Challenges Table
-
-- Temporary storage for authentication challenges
-- 5-minute expiration with auto-cleanup
-- Prevents replay attacks
-
-#### Audit Events Table
-
-- **Metadata-only logging** (no sensitive content)
-- Event types, timestamps, IP addresses
-- JSONB field for additional context
-
-### Performance Features
-
-- Filtered indexes for active (non-deleted) messages
+- Filtered indexes for active sessions and messages
 - Composite indexes for conversation queries
-- Optimized inbox/outbox retrieval
-- Automatic cleanup functions
+- Automatic cleanup functions for expired data
+- Optimized views for common queries (`accounts_with_crypto`, `active_messages`)
 
-## API Endpoints (Zero-Trust Design)
+## API Endpoints (Two-Layer Authentication Design)
 
-### Authentication
+### Layer 1: Account Management (Traditional Authentication)
 
-- `POST /api/auth/register` - Register user with public key
-- `POST /api/auth/challenge` - Get cryptographic challenge for login
-- `POST /api/auth/verify` - Verify signed challenge response
-- `POST /api/auth/logout` - Invalidate session token
-- `GET /api/auth/session` - Validate current session
+#### Account Registration & Login
 
-### Users
+- `POST /api/auth/register` - Register account with username/password
+- `POST /api/auth/login` - Login with username/password → account session
+- `POST /api/auth/logout` - Invalidate account session
+- `GET /api/auth/session` - Validate current account session
 
-- `GET /api/users/:username` - Get user's public key
-- `GET /api/users/search?q=query` - Search users by username
-- `PUT /api/users/profile` - Update user metadata (last_seen, etc.)
+### Layer 2: Crypto Management (Requires Account Session)
 
-### Messages (Opaque Payload Handling)
+#### Crypto Profile Setup
 
-- `POST /api/messages/relay` - Send encrypted message/session key/rekey (server treats all as opaque blobs)
-- `GET /api/messages/conversation/:username?since=timestamp&limit=50` - Get conversation history with explicit pagination
-- `GET /api/messages/inbox?limit=50&offset=0` - Get encrypted messages for user
+- `POST /api/auth/crypto/upload-key` - Upload public key to account
+- `POST /api/auth/crypto/enable-backup` - Enable cloud backup of encrypted private key
+- `POST /api/auth/crypto/disable-backup` - Disable cloud backup
+- `PUT /api/auth/crypto/update-backup` - Update encrypted private key backup
+- `GET /api/auth/crypto/fetch-backup` - Retrieve encrypted private key backup
+
+#### Crypto Authentication (Challenge-Response)
+
+- `POST /api/auth/crypto/challenge` - Get cryptographic challenge
+- `POST /api/auth/crypto/verify` - Verify signed challenge → crypto session
+
+### Layer 3: Application Operations (Requires Account + Crypto Sessions)
+
+#### User Discovery
+
+- `GET /api/users/:username` - Get user's public key (requires account session)
+- `GET /api/users/search?q=query` - Search users by username (requires account session)
+
+#### Messaging (Opaque Payload Handling)
+
+- `POST /api/messages/send` - Send encrypted message (opaque blob)
+- `GET /api/messages/conversation/:username?since=timestamp&limit=50` - Get conversation history
+- `GET /api/messages/inbox?limit=50&offset=0&undelivered_only=false` - Get encrypted messages
 - `PATCH /api/messages/:id/delivered` - Mark message as delivered
-- `DELETE /api/messages/:id` - Soft delete message (user-specific)
+- `DELETE /api/messages/:id` - Soft delete message
 
-### Contacts (User-Declared Trust)
+#### Contacts (User-Declared Trust)
 
 - `POST /api/contacts/add` - Add user to contacts
-- `GET /api/contacts` - Get user's contact list
-- `PUT /api/contacts/:id/trust-status` - Update user-declared verification status
+- `GET /api/contacts` - Get contact list
+- `PUT /api/contacts/:id/trust-status` - Update verification status (user-declared)
 - `DELETE /api/contacts/:id` - Remove contact
 
-### Key Management (Optional Cloud Backup)
+### Security & Monitoring
 
-- `POST /api/keys/backup` - Store encrypted private key backup
-- `GET /api/keys/backup` - Retrieve encrypted private key backup
-- `DELETE /api/keys/backup` - Remove key backup from server
+#### Session Management
 
-### Security & Monitoring (Metadata Only)
-
-- `GET /api/security/sessions` - List active sessions
+- `GET /api/security/sessions` - List active account sessions
 - `DELETE /api/security/sessions/:id` - Revoke specific session
-- `GET /api/security/events?limit=100` - Get security audit log (metadata only)
+- `GET /api/security/crypto-sessions` - List active crypto sessions
 
-### Health & Status
+#### Audit & Monitoring
 
+- `GET /api/security/events?category=security&limit=100` - Get audit log
 - `GET /api/health` - Service health check
-- `GET /api/metrics` - Basic usage metrics (non-sensitive)
 
-### WebSocket Events (Real-time)
+### WebSocket Events (Real-time - Requires Crypto Session)
 
 - `message_received` - New encrypted message notification
 - `user_online` / `user_offline` - Contact status updates
 - `typing_indicator` - Contact typing status
 - `delivery_confirmation` - Message delivered confirmation
 
-## Zero-Trust API Principles
+## Authentication Flow Examples
 
-### Server Behavior
+### Complete User Onboarding
 
-- **Opaque Payloads**: All encrypted content treated as uninterpretable blobs
+```bash
+# 1. Create account
+POST /api/auth/register {"username": "alice", "password": "secure123"}
+
+# 2. Login to account
+POST /api/auth/login {"username": "alice", "password": "secure123"}
+# Returns: account_session_token
+
+# 3. Upload crypto keys (requires account session)
+POST /api/auth/crypto/upload-key
+Headers: Authorization: Bearer <account_session_token>
+Body: {"publicKey": "ed25519_public_key_hex"}
+
+# 4. Enable cloud backup (optional)
+POST /api/auth/crypto/enable-backup
+Headers: Authorization: Bearer <account_session_token>
+Body: {"encryptedPrivateKey": "encrypted_private_key_blob"}
+
+# 5. Crypto authentication for messaging
+POST /api/auth/crypto/challenge
+Headers: Authorization: Bearer <account_session_token>
+# Returns: challenge
+
+POST /api/auth/crypto/verify
+Headers: Authorization: Bearer <account_session_token>
+Body: {"challenge": "...", "signature": "ed25519_signature"}
+# Returns: crypto_session_token
+
+# 6. Send messages (requires both sessions)
+POST /api/messages/send
+Headers:
+  Authorization: Bearer <account_session_token>
+  X-Crypto-Session: <crypto_session_token>
+Body: {"recipient": "bob", "encryptedPayload": "..."}
+```
+
+## Two-Layer Security Model
+
+### Authentication Layers
+
+#### **Layer 1: Account Security (Traditional)**
+
+- **Purpose**: Account access and management
+- **Method**: Username/password authentication
+- **Session Duration**: 24 hours
+- **Scope**: Account operations, key management, settings
+
+#### **Layer 2: Crypto Security (Zero-Trust)**
+
+- **Purpose**: Cryptographic operations and messaging
+- **Method**: Ed25519 challenge-response authentication
+- **Session Duration**: 15 minutes (sliding window)
+- **Scope**: Message sending/receiving, contact operations
+
+### Security Principles
+
+#### **Server Behavior**
+
+- **Account Layer**: Traditional password hashing and session management
+- **Crypto Layer**: Opaque payload handling, no private key access
 - **No Validation**: Server never validates or processes encrypted content
 - **Store & Forward**: Pure message routing without content inspection
 - **Metadata Only**: Logs events and routing info, never sensitive data
 
-### Client Responsibilities
+#### **Client Responsibilities**
 
+- **Account Management**: Password security, session handling
 - **All Crypto**: Key generation, encryption, decryption, signature verification
 - **Trust Decisions**: Contact verification is client-side only
 - **Content Ordering**: Client handles message ordering and conversation state
 - **Key Management**: Private keys never leave client (except in encrypted backups)
+
+### Session Management
+
+- **Account sessions** enable crypto key management
+- **Crypto sessions** enable message operations
+- **Hierarchical security**: Crypto sessions require valid account sessions
+- **Independent expiration**: Account and crypto sessions expire separately
 
 ## Development Notes
 
@@ -224,20 +303,99 @@ This is the **base structure** for team development. Each developer should:
 ### Frontend
 
 - [ ] Implement crypto module (key generation, encryption/decryption)
-- [ ] Add proper authentication flow
+- [ ] Add proper two-layer authentication flow (account + crypto)
 - [ ] Build chat interface with real-time messaging
 - [ ] Implement key backup/restore functionality
+- [ ] Add contact management UI
 
 ### Backend
 
-- [ ] Complete challenge-response authentication
-- [ ] Implement WebSocket message routing
-- [ ] Add proper session management
-- [ ] Implement message queuing for offline users
+- [x] Complete two-layer authentication system
+- [x] Implement challenge-response authentication with Ed25519
+- [x] Add proper session management (account + crypto sessions)
+- [x] Implement message routing with opaque payload handling
+- [x] Add contact management system
+- [ ] Implement WebSocket message routing with crypto session validation
+- [ ] Add message queuing for offline users
+- [ ] Implement session cleanup and maintenance tasks
 
 ### Security
 
-- [ ] Implement proper signature verification
+- [x] Implement proper Ed25519 signature verification
+- [x] Add challenge binding security (crypto_profile_id validation)
+- [x] Implement rate limiting on sensitive endpoints
+- [x] Add comprehensive audit logging
 - [ ] Add key rotation mechanisms
 - [ ] Implement forward secrecy
-- [ ] Add security headers and rate limiting
+- [ ] Add additional security headers and monitoring
+
+## 🔒 Security Implementation Details
+
+### Ed25519 Cryptographic Authentication
+
+- **Library**: TweetNaCl for Ed25519 signature verification
+- **Key Format**: 64-character hex strings (32 bytes)
+- **Challenge**: 64-character hex random challenge (32 bytes)
+- **Signature**: 128-character hex signature (64 bytes)
+
+### Rate Limiting Protection
+
+- **Challenge Endpoint**: 5 requests per minute per IP+username combination
+- **Memory Store**: In-memory rate limiting (use Redis in production)
+- **Response**: 429 status with retry-after header
+
+### Security Hardening
+
+- ✅ **No Public Key Leakage**: Challenge endpoint doesn't return public keys
+- ✅ **Real Signature Verification**: Ed25519 cryptographic verification
+- ✅ **Failed Login Logging**: Security audit trail for failed attempts
+- ✅ **Challenge Expiration**: 5-minute challenge window
+- ✅ **Session Timeout**: 15-minute automatic session expiration
+- ✅ **Input Validation**: Username format and public key validation
+
+## Testing the Two-Layer Authentication System
+
+### Complete Flow Test (Recommended)
+
+Run the comprehensive Node.js test that includes real Ed25519 cryptography:
+
+```bash
+# Start the application
+docker-compose up -d
+
+# Wait for services to be ready, then run the test
+cd webapp/Server
+npm install  # if not already done
+node test/test-complete-flow.js
+```
+
+This test verifies:
+
+- Account registration and login
+- Public key upload and crypto profile creation
+- Challenge-response authentication with real Ed25519 signatures
+- Crypto session management
+- Message system integration
+- Session validation and logout
+
+### Quick API Test
+
+For a quick verification that endpoints are responding:
+
+**Linux/Mac:**
+
+```bash
+cd webapp
+./scripts/test-api.sh
+```
+
+**Windows:**
+
+```bash
+cd webapp
+scripts\test-api.bat
+```
+
+### Manual Testing with Postman
+
+Use the test data from `webapp/server/test/test-complete-flow.js` to manually test the API endpoints with Postman or similar tools.

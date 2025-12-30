@@ -1,5 +1,5 @@
 @startuml
-title Account Creation & Key Management Selection
+title Account Creation & Crypto Key Setup
 
 actor User
 participant Browser
@@ -8,32 +8,44 @@ participant "Local Storage\n(IndexedDB)" as LS
 participant Server
 database Database
 
-User -> Browser: Create account + passphrase
+== Account Creation (Traditional) ==
+User -> Browser: Create account (username + password)
+Browser -> Server: POST /auth/register
+Server -> Database: store(username, password_hash)
+
+alt Registration successful
+  Server -> Browser: account created
+else Username taken
+  Server -> Browser: error
+end
+
+== Account Login ==
+User -> Browser: Login (username + password)
+Browser -> Server: POST /auth/login
+Server -> Database: verify credentials
+Server -> Browser: account session token
+
+== Crypto Key Setup (Authenticated) ==
+User -> Browser: Setup crypto keys + passphrase
 Browser -> Crypto: generateKeyPair()
 Crypto -> Crypto: encryptPrivateKey(passphrase)
 
-Browser -> User: Choose key mode
+Browser -> User: Choose key storage mode
 
 alt Local-only key mode (Recommended)
   Crypto -> LS: store(encryptedPrivateKey)
 else Cloud-backed key mode (Optional)
   Crypto -> LS: store(encryptedPrivateKey)
-  Browser -> Server: uploadEncryptedKey(encryptedPrivateKey)
+  Browser -> Server: POST /auth/crypto/enable-backup\n(requires account session)
   Server -> Database: storeEncryptedKey()
 end
 
-Browser -> Server: register(username, publicKey)
-Server -> Database: store(username, publicKey)
+Browser -> Server: POST /auth/crypto/upload-key\n(requires account session)
+Server -> Database: store(account_id, publicKey)
 
-alt Registration successful
-  Server -> Browser: success
-else Username taken
-  Server -> Browser: error
-end
-
-note right of Crypto
-Private key is never stored
-or transmitted in plaintext
+note right of Server
+Account security (password) is separate
+from crypto security (private keys)
 end note
 
 @enduml

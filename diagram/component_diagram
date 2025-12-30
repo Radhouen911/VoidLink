@@ -1,5 +1,5 @@
 @startuml
-title System Components & Trust Boundaries
+title System Components & Trust Boundaries (With Optional Key Backup)
 
 package "Client (Trusted)" {
   component Browser
@@ -30,7 +30,7 @@ note bottom of Database
 Stores:
 - Public Keys
 - Ciphertexts
-- Encrypted Private Key (optional)
+- Encrypted Private Key Backup (optional)
 end note
 
 note top of API
@@ -38,6 +38,12 @@ Server never sees:
 - Passphrases
 - Plaintext private keys
 - Plaintext messages
+end note
+
+note bottom
+Encrypted private key backup
+is retrievable BEFORE authentication,
+but does NOT grant identity.
 end note
 
 @enduml

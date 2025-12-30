@@ -1,15 +1,20 @@
 @startuml
-title Activity Diagram - User Flow
+title Activity Diagram - User Flow (Two-Layer Auth)
 
 start
 :Open App;
 
-if (New user?) then (yes)
-  :Create account;
-  :Download encrypted backup;
+if (Has account?) then (no)
+  :Create account (username/password);
+  :Setup crypto keys;
+  :Choose key storage mode;
+else (yes)
+  :Login to account;
+  :Load crypto keys;
+  :Enter key passphrase;
 endif
 
-:Login;
+:Crypto authentication (challenge-response);
 :Add contact;
 
 if (Contact verified?) then (yes)
@@ -19,6 +24,12 @@ else (no)
 endif
 
 :Send / receive messages;
+
+if (Manage keys?) then (yes)
+  :Enable/disable cloud backup;
+  :Update key storage;
+endif
+
 :Logout;
 
 stop

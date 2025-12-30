@@ -1,5 +1,5 @@
 @startuml
-title Login Flow with Optional Cloud Key
+title Login Flow with Two-Layer Authentication
 
 actor User
 participant Browser
@@ -8,35 +8,46 @@ participant "Local Storage\n(IndexedDB)" as LS
 participant Server
 database Database
 
-User -> Browser: Login + passphrase
+== Account Login (Traditional) ==
+User -> Browser: Login (username + password)
+Browser -> Server: POST /auth/login
+Server -> Database: verify credentials
+Server -> Browser: account session token
 
+== Crypto Key Loading ==
 alt Local-only key mode
   Browser -> LS: loadEncryptedPrivateKey()
 else Cloud-backed key mode
-  Browser -> Server: fetchEncryptedKey()
+  Browser -> Server: GET /auth/crypto/fetch-backup\n(requires account session)
   Server -> Database: retrieveEncryptedKey()
   Server -> Browser: encryptedPrivateKey
 end
 
+User -> Browser: Enter key passphrase
 Browser -> Crypto: decryptPrivateKey(passphrase)
 
 alt Passphrase correct
   Crypto -> Browser: privateKey in memory
-  Browser -> Server: signChallenge()
-  Server -> Browser: authentication success
 else Passphrase incorrect
   Crypto -> Browser: decryption failed
-  Browser -> User: login error
+  Browser -> User: passphrase error
 end
+
+== Crypto Authentication (Challenge-Response) ==
+Browser -> Server: POST /auth/crypto/challenge\n(requires account session)
+Server -> Browser: cryptographic challenge
+Browser -> Crypto: sign(challenge)
+Browser -> Server: POST /auth/crypto/verify\n(signature + account session)
+Server -> Browser: crypto authentication success
 
 opt After inactivity timeout (15 min)
   Browser -> Crypto: wipePrivateKeyFromMemory()
 end
 
 note right of Browser
-Decrypted private key
-exists only in memory
-during active session
+Two security layers:
+1. Account access (password)
+2. Crypto operations (private key)
 end note
 
 @enduml

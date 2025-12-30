@@ -5,8 +5,16 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Debug: Show what we're trying to install
+RUN echo "=== Package.json contents ===" && \
+    cat package.json && \
+    echo "=== Installing dependencies ===" && \
+    npm install && \
+    echo "=== Checking if tweetnacl is installed ===" && \
+    npm ls tweetnacl && \
+    echo "=== Listing all installed packages ===" && \
+    ls -la node_modules/ | grep tweet && \
+    npm cache clean --force
 
 # Copy source code
 COPY . .
