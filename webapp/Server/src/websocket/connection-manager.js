@@ -22,7 +22,7 @@ class ConnectionManager {
       messagesRouted: 0,
     };
 
-    console.log("🔗 WebSocket Connection Manager initialized");
+    console.log("WebSocket Connection Manager initialized");
   }
 
   /**
@@ -71,7 +71,7 @@ class ConnectionManager {
       );
 
       console.log(
-        `✅ User ${username} connected (${this.stats.totalConnections} total connections)`
+        `User ${username} connected (${this.stats.totalConnections} total connections)`
       );
 
       // Notify contacts about user coming online (only if was previously offline)
@@ -138,7 +138,7 @@ class ConnectionManager {
       );
 
       console.log(
-        `❌ User ${username} disconnected (${this.stats.totalConnections} total connections)`
+        `User ${username} disconnected (${this.stats.totalConnections} total connections)`
       );
 
       // Return whether this was the user's last connection
@@ -280,7 +280,7 @@ class ConnectionManager {
       }
 
       console.log(
-        `🧹 WebSocket cleanup completed. Active connections: ${this.stats.totalConnections}`
+        `WebSocket cleanup completed. Active connections: ${this.stats.totalConnections}`
       );
     } catch (error) {
       console.error("Error during WebSocket cleanup:", error);

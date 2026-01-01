@@ -2,26 +2,29 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Copy package files
+# Copy package files first for better caching
 COPY package*.json ./
 
-# Debug: Show what we're trying to install
-RUN echo "=== Package.json contents ===" && \
-    cat package.json && \
-    echo "=== Installing dependencies ===" && \
+# Install dependencies
+RUN echo "=== Installing dependencies ===" && \
     npm install && \
-    echo "=== Checking if tweetnacl is installed ===" && \
-    npm ls tweetnacl && \
-    echo "=== Listing all installed packages ===" && \
-    ls -la node_modules/ | grep tweet && \
+    echo "=== Dependencies installed successfully ===" && \
     npm cache clean --force
 
-# Copy source code
+# Copy all source code including database files
 COPY . .
 
+# Verify that init.sql is copied correctly
+RUN echo "=== Verifying init.sql file ===" && \
+    ls -la src/database/ && \
+    echo "=== init.sql file size ===" && \
+    wc -c src/database/init.sql && \
+    echo "=== init.sql first few lines ===" && \
+    head -5 src/database/init.sql
+
 # Create non-root user
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S voidlink -u 1001
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S voidlink -u 1001
 
 # Change ownership
 RUN chown -R voidlink:nodejs /app

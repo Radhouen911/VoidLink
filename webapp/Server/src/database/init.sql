@@ -1,398 +1,310 @@
--- VoidLink Database Schema for PostgreSQL
--- Two-Layer Authentication: Account + Crypto Security
+-- VoidLink Database Schema - Tables Only
+-- Simplified version with just table creation statements
 
--- Enable UUID extensions
+-- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- ============================================================================
--- LAYER 1: ACCOUNT MANAGEMENT (Traditional Authentication)
--- ============================================================================
-
--- Accounts table - traditional username/password authentication
+-- 1. ACCOUNTS TABLE
 CREATE TABLE IF NOT EXISTS accounts (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     username VARCHAR(50) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    email VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_login TIMESTAMP,
-    account_status VARCHAR(20) DEFAULT 'active' CHECK (account_status IN ('active', 'suspended', 'deleted'))
+    account_status VARCHAR(20) DEFAULT 'active',
+    last_login TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Account sessions table - traditional session management
+-- 2. ACCOUNT SESSIONS TABLE
 CREATE TABLE IF NOT EXISTS account_sessions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    account_id UUID NOT NULL,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
     session_token VARCHAR(255) UNIQUE NOT NULL,
-    expires_at TIMESTAMP NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
     ip_address INET,
     user_agent TEXT,
-    FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+    last_activity TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    last_used_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- ============================================================================
--- LAYER 2: CRYPTO MANAGEMENT (Zero-Trust Cryptographic Operations)
--- ============================================================================
-
--- Crypto profiles table - cryptographic identity linked to accounts
+-- 3. CRYPTO PROFILES TABLE
 CREATE TABLE IF NOT EXISTS crypto_profiles (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    account_id UUID NOT NULL,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    account_id UUID UNIQUE NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
     public_key TEXT NOT NULL,
-    encrypted_private_key_backup TEXT,
+    key_algorithm VARCHAR(50) DEFAULT 'RSA-OAEP',
     cloud_backup_enabled BOOLEAN DEFAULT FALSE,
-    key_uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    backup_created_at TIMESTAMP,
-    backup_updated_at TIMESTAMP,
-    key_algorithm VARCHAR(20) DEFAULT 'Ed25519',
-    FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
-    UNIQUE(account_id) -- One crypto profile per account
+    encrypted_private_key_backup TEXT,
+    key_uploaded_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    backup_created_at TIMESTAMP WITH TIME ZONE,
+    backup_updated_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Crypto sessions table - challenge-response authentication sessions
+-- 4. CRYPTO SESSIONS TABLE
 CREATE TABLE IF NOT EXISTS crypto_sessions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    account_session_id UUID NOT NULL,
-    crypto_profile_id UUID NOT NULL,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    account_session_id UUID NOT NULL REFERENCES account_sessions(id) ON DELETE CASCADE,
+    crypto_profile_id UUID NOT NULL REFERENCES crypto_profiles(id) ON DELETE CASCADE,
     crypto_token VARCHAR(255) UNIQUE NOT NULL,
-    expires_at TIMESTAMP NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (account_session_id) REFERENCES account_sessions(id) ON DELETE CASCADE,
-    FOREIGN KEY (crypto_profile_id) REFERENCES crypto_profiles(id) ON DELETE CASCADE
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    last_activity TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    last_used_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Auth challenges table - temporary challenge storage for crypto auth
+-- 5. AUTH CHALLENGES TABLE
 CREATE TABLE IF NOT EXISTS auth_challenges (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    account_session_id UUID NOT NULL,
-    crypto_profile_id UUID NOT NULL,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    account_session_id UUID NOT NULL REFERENCES account_sessions(id) ON DELETE CASCADE,
+    crypto_profile_id UUID NOT NULL REFERENCES crypto_profiles(id) ON DELETE CASCADE,
     challenge_token VARCHAR(255) UNIQUE NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    expires_at TIMESTAMP NOT NULL,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
     used BOOLEAN DEFAULT FALSE,
-    used_at TIMESTAMP,
-    FOREIGN KEY (account_session_id) REFERENCES account_sessions(id) ON DELETE CASCADE,
-    FOREIGN KEY (crypto_profile_id) REFERENCES crypto_profiles(id) ON DELETE CASCADE
+    used_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- ============================================================================
--- APPLICATION DATA (Requires Crypto Authentication)
--- ============================================================================
-
--- Messages table - stores encrypted messages (zero-trust) with enhanced delivery tracking
-CREATE TABLE IF NOT EXISTS messages (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    sender_crypto_id UUID NOT NULL,
-    recipient_crypto_id UUID NOT NULL,
-    encrypted_payload TEXT NOT NULL,
-    message_type VARCHAR(20) DEFAULT 'message',
-    delivered BOOLEAN DEFAULT FALSE,
-    delivered_at TIMESTAMP,
-    read_at TIMESTAMP,
-    deleted_by_sender BOOLEAN DEFAULT FALSE,
-    deleted_by_recipient BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    expires_at TIMESTAMP,
-    -- New fields for message queuing
-    delivery_attempts INTEGER DEFAULT 0,
-    last_delivery_attempt TIMESTAMP,
-    delivery_status VARCHAR(20) DEFAULT 'pending' CHECK (delivery_status IN ('pending', 'delivered', 'failed', 'expired')),
-    priority INTEGER DEFAULT 0, -- Higher numbers = higher priority
-    FOREIGN KEY (sender_crypto_id) REFERENCES crypto_profiles(id) ON DELETE CASCADE,
-    FOREIGN KEY (recipient_crypto_id) REFERENCES crypto_profiles(id) ON DELETE CASCADE
-);
-
--- Contacts table - manages user relationships
+-- 6. CONTACTS TABLE
 CREATE TABLE IF NOT EXISTS contacts (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    owner_crypto_id UUID NOT NULL,
-    contact_crypto_id UUID NOT NULL,
-    contact_alias VARCHAR(100),
-    user_declared_verified BOOLEAN DEFAULT FALSE,
-    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (owner_crypto_id) REFERENCES crypto_profiles(id) ON DELETE CASCADE,
-    FOREIGN KEY (contact_crypto_id) REFERENCES crypto_profiles(id) ON DELETE CASCADE,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    owner_crypto_id UUID NOT NULL REFERENCES crypto_profiles(id) ON DELETE CASCADE,
+    contact_crypto_id UUID NOT NULL REFERENCES crypto_profiles(id) ON DELETE CASCADE,
+    status VARCHAR(20) DEFAULT 'pending',
+    contact_status VARCHAR(20) DEFAULT 'pending',
+    request_message TEXT,
+    added_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    accepted_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(owner_crypto_id, contact_crypto_id)
 );
 
--- Message queue table - manages offline message delivery
+-- 7. MESSAGES TABLE
+CREATE TABLE IF NOT EXISTS messages (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    sender_crypto_id UUID NOT NULL REFERENCES crypto_profiles(id) ON DELETE CASCADE,
+    recipient_crypto_id UUID NOT NULL REFERENCES crypto_profiles(id) ON DELETE CASCADE,
+    encrypted_payload TEXT NOT NULL,
+    message_type VARCHAR(50) DEFAULT 'message',
+    delivered BOOLEAN DEFAULT FALSE,
+    delivered_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 8. MESSAGE QUEUE TABLE
 CREATE TABLE IF NOT EXISTS message_queue (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    message_id UUID NOT NULL,
-    recipient_crypto_id UUID NOT NULL,
-    queue_status VARCHAR(20) DEFAULT 'queued' CHECK (queue_status IN ('queued', 'processing', 'delivered', 'failed', 'expired')),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    message_id UUID NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+    recipient_crypto_id UUID NOT NULL REFERENCES crypto_profiles(id) ON DELETE CASCADE,
     priority INTEGER DEFAULT 0,
     retry_count INTEGER DEFAULT 0,
-    max_retries INTEGER DEFAULT 3,
-    next_retry_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    processed_at TIMESTAMP,
+    processed_at TIMESTAMP WITH TIME ZONE,
+    failed_at TIMESTAMP WITH TIME ZONE,
     error_message TEXT,
-    FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE,
-    FOREIGN KEY (recipient_crypto_id) REFERENCES crypto_profiles(id) ON DELETE CASCADE
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- User presence tracking for queue delivery optimization
+-- 9. USER PRESENCE TABLE
 CREATE TABLE IF NOT EXISTS user_presence (
-    crypto_profile_id UUID PRIMARY KEY,
-    status VARCHAR(20) DEFAULT 'offline' CHECK (status IN ('online', 'away', 'busy', 'offline')),
-    last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    crypto_profile_id UUID PRIMARY KEY REFERENCES crypto_profiles(id) ON DELETE CASCADE,
+    status VARCHAR(20) DEFAULT 'offline',
+    last_seen TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     connection_count INTEGER DEFAULT 0,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (crypto_profile_id) REFERENCES crypto_profiles(id) ON DELETE CASCADE
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- ============================================================================
--- AUDIT & SECURITY
--- ============================================================================
-
--- Audit events table - security and activity logging
+-- 10. AUDIT EVENTS TABLE
 CREATE TABLE IF NOT EXISTS audit_events (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    account_id UUID,
-    crypto_profile_id UUID,
-    event_type VARCHAR(50) NOT NULL,
-    event_category VARCHAR(20) DEFAULT 'security' CHECK (event_category IN ('security', 'account', 'crypto', 'messaging')),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    account_id UUID REFERENCES accounts(id) ON DELETE SET NULL,
+    crypto_profile_id UUID REFERENCES crypto_profiles(id) ON DELETE SET NULL,
+    event_type VARCHAR(100) NOT NULL,
+    event_category VARCHAR(50) NOT NULL,
     ip_address INET,
     user_agent TEXT,
     metadata JSONB,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE SET NULL,
-    FOREIGN KEY (crypto_profile_id) REFERENCES crypto_profiles(id) ON DELETE SET NULL
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- ============================================================================
--- PERFORMANCE INDEXES
--- ============================================================================
 
--- Account management indexes
-CREATE INDEX IF NOT EXISTS idx_accounts_username ON accounts(username);
-CREATE INDEX IF NOT EXISTS idx_accounts_status ON accounts(account_status) WHERE account_status = 'active';
-
--- Session management indexes
-CREATE INDEX IF NOT EXISTS idx_account_sessions_token ON account_sessions(session_token);
-CREATE INDEX IF NOT EXISTS idx_account_sessions_active ON account_sessions(account_id, expires_at) 
-    WHERE expires_at > CURRENT_TIMESTAMP;
-CREATE INDEX IF NOT EXISTS idx_crypto_sessions_token ON crypto_sessions(crypto_token);
-CREATE INDEX IF NOT EXISTS idx_crypto_sessions_active ON crypto_sessions(account_session_id, expires_at) 
-    WHERE expires_at > CURRENT_TIMESTAMP;
-
--- Crypto profile indexes
-CREATE INDEX IF NOT EXISTS idx_crypto_profiles_account ON crypto_profiles(account_id);
-CREATE INDEX IF NOT EXISTS idx_crypto_profiles_backup ON crypto_profiles(cloud_backup_enabled) 
-    WHERE cloud_backup_enabled = TRUE;
-
--- Message indexes (with soft delete filtering and delivery tracking)
-CREATE INDEX IF NOT EXISTS idx_messages_recipient_time ON messages(recipient_crypto_id, created_at DESC) 
-    WHERE deleted_by_recipient = FALSE;
-CREATE INDEX IF NOT EXISTS idx_messages_sender_time ON messages(sender_crypto_id, created_at DESC) 
-    WHERE deleted_by_sender = FALSE;
-CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(sender_crypto_id, recipient_crypto_id, created_at DESC) 
-    WHERE deleted_by_sender = FALSE AND deleted_by_recipient = FALSE;
-CREATE INDEX IF NOT EXISTS idx_messages_delivery_status ON messages(delivery_status, created_at) 
-    WHERE delivery_status IN ('pending', 'failed');
-CREATE INDEX IF NOT EXISTS idx_messages_undelivered ON messages(recipient_crypto_id, delivered, created_at) 
-    WHERE delivered = FALSE;
-
--- Message queue indexes for efficient processing
-CREATE INDEX IF NOT EXISTS idx_message_queue_recipient ON message_queue(recipient_crypto_id, queue_status);
-CREATE INDEX IF NOT EXISTS idx_message_queue_processing ON message_queue(queue_status, next_retry_at) 
-    WHERE queue_status IN ('queued', 'failed');
-CREATE INDEX IF NOT EXISTS idx_message_queue_priority ON message_queue(priority DESC, created_at ASC) 
-    WHERE queue_status = 'queued';
-
--- User presence indexes for quick lookups
-CREATE INDEX IF NOT EXISTS idx_user_presence_status ON user_presence(status, last_seen) 
-    WHERE status = 'online';
-CREATE INDEX IF NOT EXISTS idx_user_presence_updated ON user_presence(updated_at) 
-    WHERE status != 'offline';
-
--- Contact indexes
-CREATE INDEX IF NOT EXISTS idx_contacts_owner ON contacts(owner_crypto_id);
-CREATE INDEX IF NOT EXISTS idx_contacts_lookup ON contacts(owner_crypto_id, contact_crypto_id);
-
--- Challenge cleanup index
-CREATE INDEX IF NOT EXISTS idx_challenges_expires ON auth_challenges(expires_at) 
-    WHERE used = FALSE;
-
--- Audit indexes
-CREATE INDEX IF NOT EXISTS idx_audit_account_time ON audit_events(account_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_audit_event_type ON audit_events(event_type, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_audit_category ON audit_events(event_category, created_at DESC);
-
--- ============================================================================
--- UTILITY VIEWS
--- ============================================================================
-
--- Active messages view (not soft deleted)
-CREATE OR REPLACE VIEW active_messages AS
-SELECT * FROM messages 
-WHERE deleted_by_sender = FALSE AND deleted_by_recipient = FALSE;
-
--- User inbox view (not deleted by recipient)
-CREATE OR REPLACE VIEW user_inbox AS
-SELECT * FROM messages 
-WHERE deleted_by_recipient = FALSE;
-
--- User sent messages view (not deleted by sender)
-CREATE OR REPLACE VIEW user_sent AS
-SELECT * FROM messages 
-WHERE deleted_by_sender = FALSE;
-
--- Account with crypto profile view
-CREATE OR REPLACE VIEW accounts_with_crypto AS
-SELECT 
-    a.id as account_id,
-    a.username,
-    a.created_at as account_created,
-    a.last_login,
-    cp.id as crypto_profile_id,
-    cp.public_key,
-    cp.cloud_backup_enabled,
-    cp.key_uploaded_at
-FROM accounts a
-LEFT JOIN crypto_profiles cp ON a.id = cp.account_id;
-
--- ============================================================================
--- CLEANUP FUNCTIONS
--- ============================================================================
-
--- Clean expired challenges
-CREATE OR REPLACE FUNCTION cleanup_expired_challenges()
-RETURNS INTEGER AS $$
-DECLARE
-    deleted_count INTEGER;
+-- Helper function to check if two users are contacts
+CREATE OR REPLACE FUNCTION are_contacts(crypto_id_1 UUID, crypto_id_2 UUID)
+RETURNS BOOLEAN AS $$
 BEGIN
-    DELETE FROM auth_challenges 
-    WHERE expires_at < CURRENT_TIMESTAMP;
-    
-    GET DIAGNOSTICS deleted_count = ROW_COUNT;
-    RETURN deleted_count;
+    RETURN EXISTS (
+        SELECT 1 FROM contacts 
+        WHERE (owner_crypto_id = crypto_id_1 AND contact_crypto_id = crypto_id_2)
+           OR (owner_crypto_id = crypto_id_2 AND contact_crypto_id = crypto_id_1)
+    );
 END;
 $$ LANGUAGE plpgsql;
 
--- Clean expired sessions
+-- Helper function to get queued messages for a user
+CREATE OR REPLACE FUNCTION get_queued_messages(recipient_id UUID)
+RETURNS TABLE (
+    queue_id UUID,
+    message_id UUID,
+    sender_crypto_id UUID,
+    encrypted_payload TEXT,
+    message_type VARCHAR(50),
+    priority INTEGER,
+    created_at TIMESTAMP WITH TIME ZONE
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        mq.id as queue_id,
+        m.id as message_id,
+        m.sender_crypto_id,
+        m.encrypted_payload,
+        m.message_type,
+        mq.priority,
+        m.created_at
+    FROM message_queue mq
+    INNER JOIN messages m ON mq.message_id = m.id
+    WHERE mq.recipient_crypto_id = recipient_id
+      AND mq.processed_at IS NULL
+      AND mq.failed_at IS NULL
+    ORDER BY mq.priority DESC, mq.created_at ASC;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Cleanup function for expired sessions
 CREATE OR REPLACE FUNCTION cleanup_expired_sessions()
 RETURNS INTEGER AS $$
 DECLARE
     deleted_count INTEGER;
 BEGIN
-    -- Clean expired account sessions (cascades to crypto sessions)
-    DELETE FROM account_sessions 
-    WHERE expires_at < CURRENT_TIMESTAMP;
-    
+    DELETE FROM crypto_sessions WHERE expires_at < CURRENT_TIMESTAMP;
+    DELETE FROM account_sessions WHERE expires_at < CURRENT_TIMESTAMP;
     GET DIAGNOSTICS deleted_count = ROW_COUNT;
     RETURN deleted_count;
 END;
 $$ LANGUAGE plpgsql;
 
--- ============================================================================
--- SECURITY COMMENTS
--- ============================================================================
-
-COMMENT ON TABLE accounts IS 'Traditional account authentication - username/password';
-COMMENT ON TABLE crypto_profiles IS 'Cryptographic identity linked to accounts - zero-trust layer';
-COMMENT ON TABLE messages IS 'Encrypted message payloads - server never sees plaintext';
-COMMENT ON COLUMN messages.encrypted_payload IS 'Opaque encrypted blob - server does not interpret content';
-COMMENT ON COLUMN contacts.user_declared_verified IS 'User-declared trust flag - not cryptographically enforced by server';
-COMMENT ON TABLE audit_events IS 'Security audit log - tracks both account and crypto operations';
-
-COMMENT ON TABLE account_sessions IS 'Traditional session management for account operations';
-COMMENT ON TABLE crypto_sessions IS 'Challenge-response sessions for cryptographic operations';
-COMMENT ON COLUMN crypto_profiles.encrypted_private_key_backup IS 'Optional encrypted private key backup - encrypted by user passphrase';
-
--- ============================================================================
--- MESSAGE QUEUE FUNCTIONS
--- ============================================================================
-
--- Clean expired messages and failed queue entries
-CREATE OR REPLACE FUNCTION cleanup_expired_messages()
+-- Cleanup function for expired challenges
+CREATE OR REPLACE FUNCTION cleanup_expired_challenges()
 RETURNS INTEGER AS $$
 DECLARE
     deleted_count INTEGER;
 BEGIN
-    -- Clean expired messages
-    DELETE FROM messages 
-    WHERE expires_at < CURRENT_TIMESTAMP;
-    
+    DELETE FROM auth_challenges WHERE expires_at < CURRENT_TIMESTAMP;
     GET DIAGNOSTICS deleted_count = ROW_COUNT;
-    
-    -- Clean failed queue entries that exceeded max retries
-    DELETE FROM message_queue 
-    WHERE queue_status = 'failed' 
-      AND retry_count >= max_retries 
-      AND processed_at < CURRENT_TIMESTAMP - INTERVAL '24 hours';
-    
-    -- Clean expired queue entries
-    DELETE FROM message_queue 
-    WHERE queue_status = 'expired';
-    
     RETURN deleted_count;
 END;
 $$ LANGUAGE plpgsql;
 
--- Process message queue for a specific user
-CREATE OR REPLACE FUNCTION get_queued_messages(user_crypto_id UUID)
-RETURNS TABLE(
-    queue_id UUID,
-    message_id UUID,
-    encrypted_payload TEXT,
-    message_type VARCHAR(20),
-    sender_crypto_id UUID,
-    created_at TIMESTAMP,
-    priority INTEGER
+
+-- Helper function to get contact status between two users
+CREATE OR REPLACE FUNCTION get_contact_status(crypto_id_1 UUID, crypto_id_2 UUID)
+RETURNS TABLE (
+    relationship_status VARCHAR(20),
+    contact_id UUID,
+    is_owner BOOLEAN
+) AS $$
+DECLARE
+    result_count INTEGER;
+    accepted_count INTEGER;
+BEGIN
+    -- Check if any relationship exists
+    SELECT COUNT(*) INTO result_count
+    FROM contacts c
+    WHERE (c.owner_crypto_id = crypto_id_1 AND c.contact_crypto_id = crypto_id_2)
+       OR (c.owner_crypto_id = crypto_id_2 AND c.contact_crypto_id = crypto_id_1);
+    
+    IF result_count = 0 THEN
+        RETURN QUERY SELECT 'none'::VARCHAR(20), NULL::UUID, FALSE::BOOLEAN;
+    ELSE
+        -- Check if both sides are accepted (mutual)
+        SELECT COUNT(*) INTO accepted_count
+        FROM contacts c
+        WHERE ((c.owner_crypto_id = crypto_id_1 AND c.contact_crypto_id = crypto_id_2)
+            OR (c.owner_crypto_id = crypto_id_2 AND c.contact_crypto_id = crypto_id_1))
+          AND c.contact_status = 'accepted';
+        
+        IF accepted_count > 0 THEN
+            RETURN QUERY SELECT 'mutual'::VARCHAR(20), c.id as contact_id, (c.owner_crypto_id = crypto_id_1) as is_owner
+            FROM contacts c
+            WHERE (c.owner_crypto_id = crypto_id_1 AND c.contact_crypto_id = crypto_id_2)
+               OR (c.owner_crypto_id = crypto_id_2 AND c.contact_crypto_id = crypto_id_1)
+            LIMIT 1;
+        ELSE
+            RETURN QUERY
+            SELECT 
+                c.status as relationship_status,
+                c.id as contact_id,
+                (c.owner_crypto_id = crypto_id_1) as is_owner
+            FROM contacts c
+            WHERE (c.owner_crypto_id = crypto_id_1 AND c.contact_crypto_id = crypto_id_2)
+               OR (c.owner_crypto_id = crypto_id_2 AND c.contact_crypto_id = crypto_id_1)
+            LIMIT 1;
+        END IF;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+
+-- Helper function to get pending contact requests
+CREATE OR REPLACE FUNCTION get_pending_contact_requests(user_crypto_id UUID)
+RETURNS TABLE (
+    contact_id UUID,
+    requester_crypto_id UUID,
+    requester_username VARCHAR(50),
+    requester_public_key TEXT,
+    request_message TEXT,
+    created_at TIMESTAMP WITH TIME ZONE
 ) AS $$
 BEGIN
     RETURN QUERY
     SELECT 
-        mq.id,
-        m.id,
-        m.encrypted_payload,
-        m.message_type,
-        m.sender_crypto_id,
-        m.created_at,
-        mq.priority
-    FROM message_queue mq
-    JOIN messages m ON mq.message_id = m.id
-    WHERE mq.recipient_crypto_id = user_crypto_id
-      AND mq.queue_status = 'queued'
-      AND mq.next_retry_at <= CURRENT_TIMESTAMP
-    ORDER BY mq.priority DESC, mq.created_at ASC;
+        c.id as contact_id,
+        c.owner_crypto_id as requester_crypto_id,
+        a.username as requester_username,
+        cp.public_key as requester_public_key,
+        c.request_message,
+        c.created_at
+    FROM contacts c
+    INNER JOIN crypto_profiles cp ON c.owner_crypto_id = cp.id
+    INNER JOIN accounts a ON cp.account_id = a.id
+    WHERE c.contact_crypto_id = user_crypto_id
+      AND c.contact_status = 'pending'
+    ORDER BY c.created_at DESC;
 END;
 $$ LANGUAGE plpgsql;
 
--- Update user presence status
-CREATE OR REPLACE FUNCTION update_user_presence(
-    user_crypto_id UUID,
-    new_status VARCHAR(20),
-    connection_delta INTEGER DEFAULT 0
-)
-RETURNS VOID AS $$
+-- Helper function to get contacts with presence information
+CREATE OR REPLACE FUNCTION get_contacts_with_presence(user_crypto_id UUID)
+RETURNS TABLE (
+    contact_crypto_id UUID,
+    username VARCHAR(50),
+    public_key TEXT,
+    key_algorithm VARCHAR(50),
+    contact_status VARCHAR(20),
+    presence_status VARCHAR(20),
+    last_seen TIMESTAMP WITH TIME ZONE,
+    is_online BOOLEAN,
+    added_at TIMESTAMP WITH TIME ZONE
+) AS $$
 BEGIN
-    INSERT INTO user_presence (crypto_profile_id, status, connection_count, updated_at)
-    VALUES (user_crypto_id, new_status, GREATEST(0, connection_delta), CURRENT_TIMESTAMP)
-    ON CONFLICT (crypto_profile_id) 
-    DO UPDATE SET 
-        status = EXCLUDED.status,
-        connection_count = GREATEST(0, user_presence.connection_count + connection_delta),
-        last_seen = CASE 
-            WHEN EXCLUDED.status = 'offline' THEN CURRENT_TIMESTAMP
-            ELSE user_presence.last_seen
-        END,
-        updated_at = CURRENT_TIMESTAMP;
+    RETURN QUERY
+    SELECT 
+        c.contact_crypto_id,
+        a.username,
+        cp.public_key,
+        cp.key_algorithm,
+        c.contact_status,
+        COALESCE(up.status, 'offline') as presence_status,
+        up.last_seen,
+        COALESCE(up.connection_count > 0 AND up.status != 'offline', FALSE) as is_online,
+        c.added_at
+    FROM contacts c
+    INNER JOIN crypto_profiles cp ON c.contact_crypto_id = cp.id
+    INNER JOIN accounts a ON cp.account_id = a.id
+    LEFT JOIN user_presence up ON c.contact_crypto_id = up.crypto_profile_id
+    WHERE c.owner_crypto_id = user_crypto_id
+      AND c.contact_status = 'accepted'
+    ORDER BY is_online DESC, a.username ASC;
 END;
 $$ LANGUAGE plpgsql;
-
--- ============================================================================
--- MESSAGE QUEUE COMMENTS
--- ============================================================================
-
-COMMENT ON TABLE message_queue IS 'Manages offline message delivery with retry logic';
-COMMENT ON TABLE user_presence IS 'Tracks user online/offline status for queue optimization';
-COMMENT ON COLUMN messages.delivery_status IS 'Tracks message delivery state for queue processing';
-COMMENT ON COLUMN message_queue.retry_count IS 'Number of delivery attempts for failed messages';
-COMMENT ON COLUMN user_presence.connection_count IS 'Number of active WebSocket connections for user';
