@@ -38,28 +38,21 @@ services:
       - database
     networks:
       - voidlink-network
-    # Removed volume mounts to prevent overriding copied files
-    # The Dockerfile will handle copying all necessary files
     restart: unless-stopped
 
-  # Frontend Client - COMMENTED OUT (not working on frontend)
-  # frontend:
-  #   build:
-  #     context: ./client
-  #     dockerfile: Dockerfile
-  #   container_name: voidlink-frontend
-  #   environment:
-  #     VITE_API_URL: http://localhost:5000
-  #   ports:
-  #     - "3000:3000"
-  #   depends_on:
-  #     - backend
-  #   networks:
-  #     - voidlink-network
-  #   volumes:
-  #     - ./client:/app
-  #     - /app/node_modules
-  #   restart: unless-stopped
+  # Frontend Client
+  frontend:
+    build:
+      context: ./Client
+      dockerfile: Dockerfile
+    container_name: voidlink-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - voidlink-network
+    restart: unless-stopped
 
 volumes:
   postgres_data:
