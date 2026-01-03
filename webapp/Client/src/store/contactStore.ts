@@ -3,6 +3,7 @@ import { create } from "zustand";
 export interface Contact {
   username: string;
   publicKey: string;
+  cryptoProfileId?: string;
   contactStatus: string;
   isOnline: boolean;
   addedAt: string;

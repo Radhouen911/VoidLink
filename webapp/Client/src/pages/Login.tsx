@@ -8,7 +8,7 @@ import { authService } from "../services/auth";
 
 export const Login: React.FC = () => {
   const navigate = useNavigate();
-  const { showToast } = useToast();
+  const { showToast, ToastContainer } = useToast();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -19,29 +19,33 @@ export const Login: React.FC = () => {
     e.preventDefault();
 
     if (!username || !password || !passphrase) {
-      showToast("Please fill in all fields", "error");
+      showToast("✗ Please fill in all fields", "error");
       return;
     }
 
     setIsLoading(true);
     try {
-      showToast("Authenticating and decrypting keys...", "info");
+      showToast("Authenticating...", "info");
       await authService.login(username, password, passphrase);
-      showToast("Login successful! Redirecting...", "success");
-      setTimeout(() => navigate("/chat"), 1500);
+      showToast("✓ Login successful!", "success");
+      showToast("Redirecting to chat...", "info");
+      setTimeout(() => navigate("/chat"), 2000);
     } catch (error: any) {
       console.error("Login error:", error);
 
+      let errorMessage = "Login failed. Please check your credentials.";
+
       if (error.message.includes("Incorrect passphrase")) {
-        showToast("Incorrect passphrase. Please try again.", "error");
+        errorMessage = "✗ Incorrect passphrase. Please try again.";
       } else if (error.message.includes("No backup found")) {
-        showToast("No backup found. You may need to register first.", "error");
-      } else {
-        showToast(
-          error.message || "Login failed. Please check your credentials.",
-          "error"
-        );
+        errorMessage = "✗ No backup found. You may need to register first.";
+      } else if (error.message.includes("Invalid username or password")) {
+        errorMessage = "✗ Invalid username or password.";
+      } else if (error.message) {
+        errorMessage = "✗ " + error.message;
       }
+
+      showToast(errorMessage, "error");
     } finally {
       setIsLoading(false);
     }
@@ -51,10 +55,12 @@ export const Login: React.FC = () => {
     return (
       <div className="min-h-screen bg-void-black flex items-center justify-center px-4">
         <div className="card max-w-md w-full p-8 text-center">
-          <Loading size="lg" text="Authenticating..." />
-          <p className="text-void-text-dim mt-4 text-sm">
-            Decrypting your keys securely...
-          </p>
+          <Loading size="lg" text="Logging in..." />
+          <div className="mt-6 space-y-2 text-sm text-void-text-dim">
+            <p>🔑 Fetching your encrypted keys...</p>
+            <p>🔓 Decrypting with your passphrase...</p>
+            <p>✓ Authenticating...</p>
+          </div>
         </div>
       </div>
     );
@@ -126,6 +132,7 @@ export const Login: React.FC = () => {
           </button>
         </p>
       </div>
+      <ToastContainer />
     </div>
   );
 };

@@ -8,7 +8,7 @@ import { authService } from "../services/auth";
 
 export const Register: React.FC = () => {
   const navigate = useNavigate();
-  const { showToast } = useToast();
+  const { showToast, ToastContainer } = useToast();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -52,17 +52,30 @@ export const Register: React.FC = () => {
 
     setIsLoading(true);
     try {
-      showToast("Creating account and generating keys...", "info");
       await authService.register(username, password, passphrase);
-      showToast("Account created successfully! Redirecting...", "success");
+      showToast("✓ Account created successfully!", "success");
+      showToast("✓ Keys generated and encrypted!", "success");
       setTimeout(() => navigate("/chat"), 1500);
     } catch (error: any) {
       console.error("Registration error:", error);
-      showToast(
-        error.message || "Registration failed. Please try again.",
-        "error"
-      );
-    } finally {
+
+      let errorMessage = "Registration failed. Please try again.";
+
+      // Check for specific error codes/messages
+      if (
+        error.message?.includes("Username already exists") ||
+        error.message?.includes("USERNAME_EXISTS")
+      ) {
+        errorMessage = "✗ Username already taken. Please choose another.";
+      } else if (error.message?.includes("Username must be")) {
+        errorMessage = "✗ Username must be between 3 and 50 characters.";
+      } else if (error.message?.includes("Password must be")) {
+        errorMessage = "✗ Password must be at least 8 characters.";
+      } else if (error.message) {
+        errorMessage = "✗ " + error.message;
+      }
+
+      showToast(errorMessage, "error");
       setIsLoading(false);
     }
   };
@@ -71,10 +84,12 @@ export const Register: React.FC = () => {
     return (
       <div className="min-h-screen bg-void-black flex items-center justify-center px-4">
         <div className="card max-w-md w-full p-8 text-center">
-          <Loading size="lg" text="Creating your secure account..." />
-          <p className="text-void-text-dim mt-4 text-sm">
-            Generating and encrypting your keys...
-          </p>
+          <Loading size="lg" text="Creating your account..." />
+          <div className="mt-6 space-y-2 text-sm text-void-text-dim">
+            <p>⏳ Generating encryption keys...</p>
+            <p>🔐 Encrypting your private key...</p>
+            <p>☁️ Setting up cloud backup...</p>
+          </div>
         </div>
       </div>
     );
@@ -183,6 +198,7 @@ export const Register: React.FC = () => {
           </button>
         </p>
       </div>
+      <ToastContainer />
     </div>
   );
 };

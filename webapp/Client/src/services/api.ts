@@ -51,11 +51,13 @@ class ApiService {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new ApiError(
-          data.message || "Request failed",
-          response.status,
-          data.error
-        );
+        // Extract the most user-friendly error message
+        const errorMessage =
+          data.message ||
+          data.error ||
+          `Request failed with status ${response.status}`;
+
+        throw new ApiError(errorMessage, response.status, data.error);
       }
 
       return data;
@@ -63,7 +65,16 @@ class ApiService {
       if (error instanceof ApiError) {
         throw error;
       }
-      throw new ApiError("Network error", 0);
+
+      // Network or other errors
+      if (error instanceof TypeError && error.message.includes("fetch")) {
+        throw new ApiError(
+          "Cannot connect to server. Please check your connection.",
+          0
+        );
+      }
+
+      throw new ApiError("Network error: " + (error as Error).message, 0);
     }
   }
 

@@ -110,7 +110,59 @@ export class WebSocketService {
       this.ws.send(JSON.stringify({ type, ...payload }));
     } else {
       console.error("WebSocket not connected");
+      throw new Error("WebSocket not connected");
     }
+  }
+
+  /**
+   * Send a message via WebSocket
+   * Returns a promise that resolves when the server confirms receipt
+   */
+  sendMessage(
+    recipientUsername: string,
+    recipientCryptoProfileId: string,
+    encryptedPayload: string,
+    messageType: string = "message"
+  ): Promise<any> {
+    return new Promise((resolve, reject) => {
+      if (!this.isConnected()) {
+        reject(new Error("WebSocket not connected"));
+        return;
+      }
+
+      // Set up one-time listeners for response
+      const successHandler = (data: any) => {
+        if (data.action === "message_sent") {
+          this.off("success", successHandler);
+          this.off("error", errorHandler);
+          resolve(data.data);
+        }
+      };
+
+      const errorHandler = (data: any) => {
+        this.off("success", successHandler);
+        this.off("error", errorHandler);
+        reject(new Error(data.message || "Failed to send message"));
+      };
+
+      this.on("success", successHandler);
+      this.on("error", errorHandler);
+
+      // Send the message
+      this.send("message_send", {
+        recipientUsername,
+        recipientCryptoProfileId,
+        encryptedPayload,
+        messageType,
+      });
+
+      // Timeout after 10 seconds
+      setTimeout(() => {
+        this.off("success", successHandler);
+        this.off("error", errorHandler);
+        reject(new Error("Message send timeout"));
+      }, 10000);
+    });
   }
 
   disconnect() {

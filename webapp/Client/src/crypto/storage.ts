@@ -9,6 +9,8 @@ const STORAGE_KEYS = {
   PUBLIC_KEY: "voidlink_public_key",
   ENCRYPTED_PRIVATE_KEY: "voidlink_encrypted_private_key", // Always encrypted
   USERNAME: "voidlink_username",
+  ACCOUNT_ID: "voidlink_account_id",
+  CRYPTO_PROFILE_ID: "voidlink_crypto_profile_id",
 } as const;
 
 export class SecureStorage {
@@ -83,6 +85,34 @@ export class SecureStorage {
   }
 
   /**
+   * Store account ID
+   */
+  static setAccountId(accountId: string): void {
+    localStorage.setItem(STORAGE_KEYS.ACCOUNT_ID, accountId);
+  }
+
+  /**
+   * Get account ID
+   */
+  static getAccountId(): string | null {
+    return localStorage.getItem(STORAGE_KEYS.ACCOUNT_ID);
+  }
+
+  /**
+   * Store crypto profile ID
+   */
+  static setCryptoProfileId(cryptoProfileId: string): void {
+    localStorage.setItem(STORAGE_KEYS.CRYPTO_PROFILE_ID, cryptoProfileId);
+  }
+
+  /**
+   * Get crypto profile ID
+   */
+  static getCryptoProfileId(): string | null {
+    return localStorage.getItem(STORAGE_KEYS.CRYPTO_PROFILE_ID);
+  }
+
+  /**
    * Check if user has encrypted keys stored locally
    */
   static hasLocalKeys(): boolean {
@@ -91,6 +121,27 @@ export class SecureStorage {
       !!this.getPublicKey() &&
       !!this.getUsername()
     );
+  }
+
+  /**
+   * Check if user has valid session tokens
+   */
+  static hasValidSession(): boolean {
+    return !!this.getAccountToken() && !!this.getCryptoToken();
+  }
+
+  /**
+   * Clear account token
+   */
+  static clearAccountToken(): void {
+    localStorage.removeItem(STORAGE_KEYS.ACCOUNT_TOKEN);
+  }
+
+  /**
+   * Clear crypto token
+   */
+  static clearCryptoToken(): void {
+    localStorage.removeItem(STORAGE_KEYS.CRYPTO_TOKEN);
   }
 
   /**

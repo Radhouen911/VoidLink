@@ -8,63 +8,101 @@ import { SecureStorage } from "../crypto/storage";
 import { useAuthStore } from "../store/authStore";
 import { api } from "./api";
 
+// In-memory storage for decrypted private key (cleared on page refresh)
+let sessionPrivateKey: string | null = null;
+
+export const getSessionPrivateKey = () => sessionPrivateKey;
+export const setSessionPrivateKey = (key: string) => {
+  sessionPrivateKey = key;
+};
+export const clearSessionPrivateKey = () => {
+  sessionPrivateKey = null;
+};
+
 export class AuthService {
   /**
    * Register new account
    * Passphrase is REQUIRED to encrypt private key
    */
   async register(username: string, password: string, passphrase: string) {
-    // Step 1: Register account
-    const registerResponse: any = await api.register(username, password);
-    console.log("Register response:", registerResponse);
+    try {
+      // Step 1: Register account
+      console.log("Step 1: Registering account...");
+      const registerResponse: any = await api.register(username, password);
+      console.log("Register response:", registerResponse);
 
-    // Step 2: Login to get session token
-    const loginResponse: any = await api.login(username, password);
-    console.log("Login after register:", loginResponse);
+      // Step 2: Login to get session token
+      console.log("Step 2: Logging in...");
+      const loginResponse: any = await api.login(username, password);
+      console.log("Login after register:", loginResponse);
 
-    const accountToken = loginResponse.data?.accountSessionToken;
+      const accountToken = loginResponse.data?.accountSessionToken;
 
-    if (!accountToken) {
-      throw new Error("Failed to get account token after registration");
+      if (!accountToken) {
+        throw new Error("Failed to get account token after registration");
+      }
+
+      // Store account token
+      SecureStorage.setAccountToken(accountToken);
+      SecureStorage.setUsername(username);
+
+      // Step 3: Generate crypto keys
+      console.log("Step 3: Generating keys...");
+      const keyPair = generateSigningKeyPair();
+      const publicKey = keyPair.publicKey;
+      const privateKey = keyPair.privateKey;
+
+      console.log("Generated keys:", {
+        publicKeyLength: publicKey.length,
+        privateKeyLength: privateKey.length,
+      });
+
+      // Step 4: Encrypt private key with passphrase
+      console.log("Step 4: Encrypting private key...");
+      let encryptedPrivateKey: string;
+      try {
+        encryptedPrivateKey = exportKeysAsBackup(privateKey, passphrase);
+        console.log("Private key encrypted successfully");
+      } catch (error) {
+        console.error("Encryption error:", error);
+        throw new Error(
+          "Failed to encrypt private key: " + (error as Error).message
+        );
+      }
+
+      // Store encrypted private key locally
+      SecureStorage.setEncryptedPrivateKey(encryptedPrivateKey);
+      SecureStorage.setPublicKey(publicKey);
+
+      // Step 5: Upload public key to server
+      console.log("Step 5: Uploading public key...");
+      const uploadResponse: any = await api.uploadPublicKey(publicKey);
+      console.log("Public key uploaded:", uploadResponse);
+
+      // Step 6: Upload encrypted private key backup to server
+      console.log("Step 6: Enabling cloud backup...");
+      const backupResponse: any = await api.enableBackup(encryptedPrivateKey);
+      console.log("Cloud backup enabled:", backupResponse);
+
+      // Step 7: Complete crypto challenge (decrypt key temporarily for signing)
+      console.log("Step 7: Completing crypto challenge...");
+      const cryptoToken = await this.completeCryptoChallenge(privateKey);
+      console.log("Crypto challenge completed, token:", cryptoToken);
+
+      // Cache private key in memory for the session
+      sessionPrivateKey = privateKey;
+
+      // Update auth store
+      useAuthStore.getState().setUser({ username, publicKey });
+      useAuthStore.getState().setAccountToken(accountToken);
+      useAuthStore.getState().setCryptoToken(cryptoToken);
+
+      console.log("Registration complete!");
+      return { username, publicKey };
+    } catch (error) {
+      console.error("Registration failed at step:", error);
+      throw error;
     }
-
-    // Store account token
-    SecureStorage.setAccountToken(accountToken);
-    SecureStorage.setUsername(username);
-
-    // Step 3: Generate crypto keys
-    const keyPair = generateSigningKeyPair();
-    const publicKey = keyPair.publicKey;
-    const privateKey = keyPair.privateKey;
-
-    console.log("Generated keys:", {
-      publicKeyLength: publicKey.length,
-      privateKeyLength: privateKey.length,
-    });
-
-    // Step 4: Encrypt private key with passphrase
-    const encryptedPrivateKey = exportKeysAsBackup(privateKey, passphrase);
-
-    // Store encrypted private key locally
-    SecureStorage.setEncryptedPrivateKey(encryptedPrivateKey);
-    SecureStorage.setPublicKey(publicKey);
-
-    // Step 5: Upload public key to server
-    await api.uploadPublicKey(publicKey);
-
-    // Step 6: Upload encrypted private key backup to server
-    await api.enableBackup(encryptedPrivateKey);
-    console.log("Cloud backup enabled with encrypted private key");
-
-    // Step 7: Complete crypto challenge (decrypt key temporarily for signing)
-    const cryptoToken = await this.completeCryptoChallenge(privateKey);
-
-    // Update auth store
-    useAuthStore.getState().setUser({ username, publicKey });
-    useAuthStore.getState().setAccountToken(accountToken);
-    useAuthStore.getState().setCryptoToken(cryptoToken);
-
-    return { username, publicKey };
   }
 
   /**
@@ -148,8 +186,8 @@ export class AuthService {
     // Step 4: Complete crypto challenge (private key only in memory)
     const cryptoToken = await this.completeCryptoChallenge(privateKey);
 
-    // Clear private key from memory (it's only needed for challenge)
-    privateKey = "";
+    // Cache private key in memory for the session (don't clear it!)
+    sessionPrivateKey = privateKey;
 
     // Update auth store
     useAuthStore.getState().setUser({ username, publicKey });
@@ -212,6 +250,8 @@ export class AuthService {
     } catch (error) {
       console.error("Logout API call failed:", error);
     } finally {
+      // Clear session private key from memory
+      clearSessionPrivateKey();
       useAuthStore.getState().logout();
     }
   }

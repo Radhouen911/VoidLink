@@ -32,7 +32,7 @@ export const Toast: React.FC<ToastProps> = ({
 
   return (
     <div
-      className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg transition-all duration-300 ${
+      className={`px-6 py-3 rounded-lg shadow-lg transition-all duration-300 ${
         typeClasses[type]
       } ${
         isVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"
@@ -73,8 +73,8 @@ export const useToast = () => {
   };
 
   const ToastContainer = () => (
-    <>
-      {toasts.map((toast) => (
+    <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
+      {toasts.map((toast, index) => (
         <Toast
           key={toast.id}
           message={toast.message}
@@ -82,7 +82,7 @@ export const useToast = () => {
           onClose={() => removeToast(toast.id)}
         />
       ))}
-    </>
+    </div>
   );
 
   return { showToast, ToastContainer };

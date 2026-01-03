@@ -79,9 +79,23 @@ export const useChatStore = create<ChatState>((set, get) => ({
       isTyping: false,
     };
 
-    conversation.messages = [...messages, ...conversation.messages];
-    if (messages.length > 0) {
-      conversation.lastMessage = messages[messages.length - 1];
+    // Replace messages instead of prepending to avoid duplicates when polling
+    // Keep track of existing message IDs
+    const existingIds = new Set(conversation.messages.map((m) => m.id));
+    const newMessages = messages.filter((m) => !existingIds.has(m.id));
+
+    // Add only new messages
+    conversation.messages = [...conversation.messages, ...newMessages];
+
+    // Sort by createdAt to maintain chronological order
+    conversation.messages.sort(
+      (a, b) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
+
+    if (conversation.messages.length > 0) {
+      conversation.lastMessage =
+        conversation.messages[conversation.messages.length - 1];
     }
 
     conversations.set(username, conversation);

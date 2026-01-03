@@ -1,10 +1,4 @@
 import nacl from "tweetnacl";
-import {
-  decodeBase64,
-  decodeUTF8,
-  encodeBase64,
-  encodeUTF8,
-} from "tweetnacl-util";
 
 export interface KeyPair {
   publicKey: string;
@@ -26,9 +20,37 @@ function toHex(bytes: Uint8Array): string {
 function fromHex(hex: string): Uint8Array {
   const bytes = new Uint8Array(hex.length / 2);
   for (let i = 0; i < hex.length; i += 2) {
-    bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+    bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
   }
   return bytes;
+}
+
+/**
+ * Convert string to Uint8Array using native TextEncoder
+ */
+function stringToBytes(str: string): Uint8Array {
+  return new TextEncoder().encode(str);
+}
+
+/**
+ * Convert Uint8Array to string using native TextDecoder
+ */
+function bytesToString(bytes: Uint8Array): string {
+  return new TextDecoder().decode(bytes);
+}
+
+/**
+ * Convert Uint8Array to base64
+ */
+function toBase64(bytes: Uint8Array): string {
+  return btoa(String.fromCharCode(...bytes));
+}
+
+/**
+ * Convert base64 to Uint8Array
+ */
+function fromBase64(base64: string): Uint8Array {
+  return Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
 }
 
 /**
@@ -70,21 +92,33 @@ export function exportKeysAsBackup(
   privateKey: string,
   password: string
 ): string {
-  // In production, use proper key derivation (PBKDF2) and encryption
-  // For now, we'll use a simple approach
-  const nonce = nacl.randomBytes(24);
-  const key = nacl.hash(encodeUTF8(password)).slice(0, 32);
+  try {
+    // Convert password to bytes using native TextEncoder
+    const passwordBytes = stringToBytes(password);
 
-  const encrypted = nacl.secretbox(encodeUTF8(privateKey), nonce, key);
+    // Generate nonce
+    const nonce = nacl.randomBytes(24);
 
-  const backup = {
-    version: 1,
-    nonce: encodeBase64(nonce),
-    encrypted: encodeBase64(encrypted),
-    timestamp: Date.now(),
-  };
+    // Derive key from password using hash
+    const keyHash = nacl.hash(passwordBytes);
+    const key = keyHash.slice(0, 32);
 
-  return JSON.stringify(backup, null, 2);
+    // Encrypt private key
+    const privateKeyBytes = stringToBytes(privateKey);
+    const encrypted = nacl.secretbox(privateKeyBytes, nonce, key);
+
+    const backup = {
+      version: 1,
+      nonce: toBase64(nonce),
+      encrypted: toBase64(encrypted),
+      timestamp: Date.now(),
+    };
+
+    return JSON.stringify(backup, null, 2);
+  } catch (error) {
+    console.error("exportKeysAsBackup error:", error);
+    throw new Error("Failed to create backup: " + (error as Error).message);
+  }
 }
 
 /**
@@ -96,16 +130,20 @@ export function importKeysFromBackup(
 ): string | null {
   try {
     const backup = JSON.parse(backupJson);
-    const nonce = decodeBase64(backup.nonce);
-    const encrypted = decodeBase64(backup.encrypted);
-    const key = nacl.hash(encodeUTF8(password)).slice(0, 32);
+    const nonce = fromBase64(backup.nonce);
+    const encrypted = fromBase64(backup.encrypted);
+
+    // Derive key from password
+    const passwordBytes = stringToBytes(password);
+    const keyHash = nacl.hash(passwordBytes);
+    const key = keyHash.slice(0, 32);
 
     const decrypted = nacl.secretbox.open(encrypted, nonce, key);
     if (!decrypted) {
       return null;
     }
 
-    return decodeUTF8(decrypted);
+    return bytesToString(decrypted);
   } catch (error) {
     console.error("Failed to import backup:", error);
     return null;

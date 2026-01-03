@@ -1,5 +1,4 @@
 import nacl from "tweetnacl";
-import { encodeUTF8 } from "tweetnacl-util";
 
 /**
  * Convert Uint8Array to hex string
@@ -16,16 +15,23 @@ function toHex(bytes: Uint8Array): string {
 function fromHex(hex: string): Uint8Array {
   const bytes = new Uint8Array(hex.length / 2);
   for (let i = 0; i < hex.length; i += 2) {
-    bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+    bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
   }
   return bytes;
+}
+
+/**
+ * Convert string to Uint8Array using native TextEncoder
+ */
+function stringToBytes(str: string): Uint8Array {
+  return new TextEncoder().encode(str);
 }
 
 /**
  * Sign a message with Ed25519 private key (HEX FORMAT)
  */
 export function signMessage(message: string, privateKey: string): string {
-  const messageBytes = encodeUTF8(message);
+  const messageBytes = stringToBytes(message);
   const privateKeyBytes = fromHex(privateKey);
 
   const signature = nacl.sign.detached(messageBytes, privateKeyBytes);
@@ -41,7 +47,7 @@ export function verifySignature(
   publicKey: string
 ): boolean {
   try {
-    const messageBytes = encodeUTF8(message);
+    const messageBytes = stringToBytes(message);
     const signatureBytes = fromHex(signature);
     const publicKeyBytes = fromHex(publicKey);
 

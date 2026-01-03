@@ -429,6 +429,7 @@ router.get("/", requireBothSessions, async (req, res) => {
           contactId: contact.contact_id,
           contactCryptoId: contact.contact_crypto_id,
           username: contact.username,
+          publicKey: contact.public_key,
           alias: contact.contact_alias,
           userDeclaredVerified: contact.user_declared_verified,
           status: contact.contact_status,
