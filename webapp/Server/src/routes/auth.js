@@ -16,6 +16,15 @@ const rateLimitStore = new Map();
 // Rate limiting middleware for sensitive endpoints
 const createRateLimit = (maxAttempts, windowMs, keyGenerator) => {
   return (req, res, next) => {
+    // Skip rate limiting in development/test mode
+    if (
+      process.env.NODE_ENV === "development" ||
+      process.env.NODE_ENV === "test" ||
+      !process.env.NODE_ENV
+    ) {
+      return next();
+    }
+
     const clientKey = keyGenerator(req);
     const now = Date.now();
 

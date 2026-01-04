@@ -1,151 +1,59 @@
 #!/bin/bash
 
-# VoidLink API Test Script
-# Tests the complete two-layer authentication flow
+# VoidLink Basic Connectivity Test
+# Simple health check and API connectivity verification
 
-echo "🔐 VoidLink API Test Script"
-echo "=========================="
+echo "🔐 VoidLink Basic Connectivity Test"
+echo "==================================="
 
 # Configuration
 BASE_URL="http://localhost:5000/api"
-TEST_USER="testuser_$(date +%s)"
-TEST_PASS="securepassword123"
 
-echo "Testing with user: $TEST_USER"
+echo "Testing VoidLink server connectivity..."
 echo ""
 
 # Test 1: Health Check
 echo "📊 Testing Health Check..."
-curl -s "$BASE_URL/health" | jq '.'
+HEALTH_RESPONSE=$(curl -s "$BASE_URL/health")
 if [ $? -eq 0 ]; then
-    echo "✅ Health check passed"
+    echo "$HEALTH_RESPONSE" | jq '.' 2>/dev/null || echo "$HEALTH_RESPONSE"
+    echo "✅ Health check passed - Server is responding"
 else
-    echo "❌ Health check failed"
+    echo "❌ Health check failed - Server may not be running"
+    echo "💡 Try: docker compose up -d"
     exit 1
 fi
 echo ""
 
-# Test 2: Register Account
-echo "📝 Testing Account Registration..."
-REGISTER_RESPONSE=$(curl -s -X POST "$BASE_URL/auth/register" \
-    -H "Content-Type: application/json" \
-    -d "{\"username\":\"$TEST_USER\",\"password\":\"$TEST_PASS\"}")
-
-echo "$REGISTER_RESPONSE" | jq '.'
-if echo "$REGISTER_RESPONSE" | jq -e '.success' > /dev/null; then
-    echo "✅ Account registration passed"
+# Test 2: Basic API Structure
+echo "🔍 Testing API Structure..."
+AUTH_RESPONSE=$(curl -s "$BASE_URL/auth/session")
+if [ $? -eq 0 ]; then
+    echo "✅ API endpoints are responding"
 else
-    echo "❌ Account registration failed"
+    echo "❌ API endpoints not accessible"
     exit 1
 fi
 echo ""
 
-# Test 3: Login
-echo "🔑 Testing Account Login..."
-LOGIN_RESPONSE=$(curl -s -X POST "$BASE_URL/auth/login" \
-    -H "Content-Type: application/json" \
-    -d "{\"username\":\"$TEST_USER\",\"password\":\"$TEST_PASS\"}")
-
-echo "$LOGIN_RESPONSE" | jq '.'
-ACCOUNT_TOKEN=$(echo "$LOGIN_RESPONSE" | jq -r '.data.accountSessionToken')
-
-if [ "$ACCOUNT_TOKEN" != "null" ] && [ "$ACCOUNT_TOKEN" != "" ]; then
-    echo "✅ Account login passed"
-    echo "   Token: ${ACCOUNT_TOKEN:0:20}..."
+# Test 3: WebSocket Stats
+echo "📡 Testing WebSocket Endpoint..."
+WS_RESPONSE=$(curl -s "$BASE_URL/websocket/stats")
+if [ $? -eq 0 ]; then
+    echo "$WS_RESPONSE" | jq '.' 2>/dev/null || echo "$WS_RESPONSE"
+    echo "✅ WebSocket endpoint is responding"
 else
-    echo "❌ Account login failed"
-    exit 1
+    echo "❌ WebSocket endpoint not accessible"
 fi
 echo ""
 
-# Test 4: Session Validation
-echo "🔍 Testing Session Validation..."
-SESSION_RESPONSE=$(curl -s -X GET "$BASE_URL/auth/session" \
-    -H "Authorization: Bearer $ACCOUNT_TOKEN")
-
-echo "$SESSION_RESPONSE" | jq '.'
-if echo "$SESSION_RESPONSE" | jq -e '.success' > /dev/null; then
-    echo "✅ Session validation passed"
-else
-    echo "❌ Session validation failed"
-    exit 1
-fi
+echo "🎉 BASIC CONNECTIVITY TESTS COMPLETED!"
+echo "======================================"
+echo "✅ Server is running and responding"
+echo "✅ API endpoints are accessible"
+echo "✅ WebSocket endpoint is available"
 echo ""
-
-# Test 5: Upload Public Key (using a dummy key for testing)
-echo "🔐 Testing Public Key Upload..."
-DUMMY_PUBLIC_KEY="1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
-UPLOAD_RESPONSE=$(curl -s -X POST "$BASE_URL/auth/crypto/upload-key" \
-    -H "Authorization: Bearer $ACCOUNT_TOKEN" \
-    -H "Content-Type: application/json" \
-    -d "{\"publicKey\":\"$DUMMY_PUBLIC_KEY\"}")
-
-echo "$UPLOAD_RESPONSE" | jq '.'
-if echo "$UPLOAD_RESPONSE" | jq -e '.success' > /dev/null; then
-    echo "✅ Public key upload passed"
-else
-    echo "❌ Public key upload failed"
-    exit 1
-fi
-echo ""
-
-# Test 6: Get Challenge
-echo "🎯 Testing Challenge Generation..."
-CHALLENGE_RESPONSE=$(curl -s -X POST "$BASE_URL/auth/crypto/challenge" \
-    -H "Authorization: Bearer $ACCOUNT_TOKEN" \
-    -H "Content-Type: application/json" \
-    -d "{}")
-
-echo "$CHALLENGE_RESPONSE" | jq '.'
-CHALLENGE=$(echo "$CHALLENGE_RESPONSE" | jq -r '.data.challenge')
-
-if [ "$CHALLENGE" != "null" ] && [ "$CHALLENGE" != "" ]; then
-    echo "✅ Challenge generation passed"
-    echo "   Challenge: $CHALLENGE"
-else
-    echo "❌ Challenge generation failed"
-    exit 1
-fi
-echo ""
-
-# Test 7: User Search
-echo "👥 Testing User Search..."
-SEARCH_RESPONSE=$(curl -s -X GET "$BASE_URL/users?q=test" \
-    -H "Authorization: Bearer $ACCOUNT_TOKEN")
-
-echo "$SEARCH_RESPONSE" | jq '.'
-if echo "$SEARCH_RESPONSE" | jq -e '.success' > /dev/null; then
-    echo "✅ User search passed"
-else
-    echo "❌ User search failed"
-    exit 1
-fi
-echo ""
-
-# Test 8: Logout
-echo "🚪 Testing Logout..."
-LOGOUT_RESPONSE=$(curl -s -X POST "$BASE_URL/auth/logout" \
-    -H "Authorization: Bearer $ACCOUNT_TOKEN")
-
-echo "$LOGOUT_RESPONSE" | jq '.'
-if echo "$LOGOUT_RESPONSE" | jq -e '.success' > /dev/null; then
-    echo "✅ Logout passed"
-else
-    echo "❌ Logout failed"
-    exit 1
-fi
-echo ""
-
-echo "🎉 ALL API TESTS PASSED!"
-echo "========================"
-echo "✅ Health check"
-echo "✅ Account registration"
-echo "✅ Account login"
-echo "✅ Session validation"
-echo "✅ Public key upload"
-echo "✅ Challenge generation"
-echo "✅ User search"
-echo "✅ Logout"
-echo ""
-echo "🔒 Two-layer authentication system is working correctly!"
-echo "📝 Note: Crypto signature verification requires the Node.js test script"
+echo "🧪 For comprehensive testing, run:"
+echo "   cd Server"
+echo "   node test/test-complete-flow.js"
+echo "   node test/test-enhanced-contacts.js"

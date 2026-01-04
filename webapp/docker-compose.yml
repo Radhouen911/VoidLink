@@ -11,7 +11,7 @@ services:
       POSTGRES_PASSWORD: voidlink_secure_pass
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./server/src/database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./Server/src/database/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5432:5432"
     networks:
@@ -21,7 +21,7 @@ services:
   # Backend Server
   backend:
     build:
-      context: ./server
+      context: ./Server
       dockerfile: Dockerfile
     container_name: voidlink-backend
     environment:
@@ -38,28 +38,20 @@ services:
       - database
     networks:
       - voidlink-network
-    volumes:
-      - ./server:/app
-      - /app/node_modules
     restart: unless-stopped
 
   # Frontend Client
   frontend:
     build:
-      context: ./client
+      context: ./Client
       dockerfile: Dockerfile
     container_name: voidlink-frontend
-    environment:
-      VITE_API_URL: http://localhost:5000
     ports:
-      - "3000:3000"
+      - "3000:80"
     depends_on:
       - backend
     networks:
       - voidlink-network
-    volumes:
-      - ./client:/app
-      - /app/node_modules
     restart: unless-stopped
 
 volumes:

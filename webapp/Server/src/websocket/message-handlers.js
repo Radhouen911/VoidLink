@@ -68,31 +68,62 @@ class MessageHandlers {
     try {
       const {
         recipientUsername,
+        recipientCryptoProfileId,
         encryptedPayload,
         messageType = "message",
       } = data;
 
-      // Find recipient's crypto profile
+      // Validate required fields
+      if (
+        !recipientUsername ||
+        !recipientCryptoProfileId ||
+        !encryptedPayload
+      ) {
+        this.sendError(
+          ws,
+          "MISSING_REQUIRED_FIELDS",
+          "recipientUsername, recipientCryptoProfileId, and encryptedPayload are required"
+        );
+        return false;
+      }
+
+      // Verify recipient exists and crypto profile ID matches username
+      // This prevents spoofing and ensures client used proper user discovery
       const recipientResult = await db.query(
         `
         SELECT cp.id as crypto_profile_id, a.username
         FROM accounts a
         INNER JOIN crypto_profiles cp ON a.id = cp.account_id
-        WHERE a.username = $1 AND a.account_status = 'active'
+        WHERE a.username = $1 AND cp.id = $2 AND a.account_status = 'active'
       `,
-        [recipientUsername]
+        [recipientUsername, recipientCryptoProfileId]
       );
 
       if (recipientResult.rows.length === 0) {
         this.sendError(
           ws,
-          "RECIPIENT_NOT_FOUND",
-          "Recipient not found or has no crypto profile"
+          "RECIPIENT_VERIFICATION_FAILED",
+          "Recipient username and crypto profile ID do not match. Please use user discovery endpoints first."
         );
         return false;
       }
 
       const recipient = recipientResult.rows[0];
+
+      // Check if users are contacts (mutual relationship required for messaging)
+      const contactCheckResult = await db.query(
+        "SELECT are_contacts($1, $2) as are_contacts",
+        [userContext.cryptoProfileId, recipient.crypto_profile_id]
+      );
+
+      if (!contactCheckResult.rows[0].are_contacts) {
+        this.sendError(
+          ws,
+          "NOT_CONTACTS",
+          "You can only send messages to users in your contacts. Please send a contact request first."
+        );
+        return false;
+      }
 
       // Prevent sending to self
       if (recipient.crypto_profile_id === userContext.cryptoProfileId) {
@@ -164,7 +195,7 @@ class MessageHandlers {
             0 // Default priority
           );
           console.log(
-            `📬 Message ${message.id} queued for offline user ${recipientUsername}`
+            `Message ${message.id} queued for offline user ${recipientUsername}`
           );
         } catch (error) {
           console.error("Failed to queue message:", error);
@@ -183,7 +214,7 @@ class MessageHandlers {
       });
 
       console.log(
-        `📨 Message ${message.id} sent from ${
+        `Message ${message.id} sent from ${
           userContext.username
         } to ${recipientUsername} (realtime: ${deliveredCount > 0}, queued: ${
           queueResult?.queued || false
@@ -229,7 +260,7 @@ class MessageHandlers {
       );
 
       console.log(
-        `⌨️  ${userContext.username} started typing to ${recipientUsername}`
+        `${userContext.username} started typing to ${recipientUsername}`
       );
       return true;
     } catch (error) {
@@ -268,7 +299,7 @@ class MessageHandlers {
       );
 
       console.log(
-        `⌨️  ${userContext.username} stopped typing to ${recipientUsername}`
+        `${userContext.username} stopped typing to ${recipientUsername}`
       );
       return true;
     } catch (error) {
@@ -338,7 +369,7 @@ class MessageHandlers {
       );
 
       console.log(
-        `✅ Message ${messageId} delivered to ${userContext.username}`
+        `Message ${messageId} delivered to ${userContext.username}`
       );
       return true;
     } catch (error) {
@@ -396,7 +427,7 @@ class MessageHandlers {
         readNotification
       );
 
-      console.log(`👁️  Message ${messageId} read by ${userContext.username}`);
+      console.log(`Message ${messageId} read by ${userContext.username}`);
       return true;
     } catch (error) {
       console.error("Message read error:", error);
@@ -427,7 +458,7 @@ class MessageHandlers {
         status
       );
 
-      console.log(`👤 ${userContext.username} presence updated to ${status}`);
+      console.log(`${userContext.username} presence updated to ${status}`);
       return true;
     } catch (error) {
       console.error("Presence update error:", error);

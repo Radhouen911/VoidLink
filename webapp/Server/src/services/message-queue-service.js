@@ -11,7 +11,7 @@ class MessageQueueService {
     this.cleanupInterval = null;
     this.isProcessing = false;
 
-    console.log("📬 Message Queue Service initialized");
+    console.log("Message Queue Service initialized");
   }
 
   /**
@@ -28,7 +28,7 @@ class MessageQueueService {
       this.cleanup();
     }, 5 * 60 * 1000);
 
-    console.log("🚀 Message Queue Service started");
+    console.log("Message Queue Service started");
   }
 
   /**
@@ -45,7 +45,7 @@ class MessageQueueService {
       this.cleanupInterval = null;
     }
 
-    console.log("🛑 Message Queue Service stopped");
+    console.log("� Message Queue Service stopped");
   }
 
   /**
@@ -61,7 +61,7 @@ class MessageQueueService {
 
       if (isOnline) {
         console.log(
-          `📨 Recipient ${recipientCryptoId} is online, no queuing needed`
+          `Recipient ${recipientCryptoId} is online, no queuing needed`
         );
         return { queued: false, reason: "recipient_online" };
       }
@@ -77,7 +77,7 @@ class MessageQueueService {
       await db.updateUserPresence(recipientCryptoId, "offline", 0);
 
       console.log(
-        `📬 Message ${messageId} queued for offline user ${recipientCryptoId}`
+        `Message ${messageId} queued for offline user ${recipientCryptoId}`
       );
 
       return {
@@ -110,7 +110,7 @@ class MessageQueueService {
       }
 
       console.log(
-        `📬 Processing queue for ${usersWithQueue.length} online users`
+        `Processing queue for ${usersWithQueue.length} online users`
       );
 
       for (const user of usersWithQueue) {
@@ -137,7 +137,7 @@ class MessageQueueService {
       }
 
       console.log(
-        `📨 Delivering ${queuedMessages.length} queued messages to ${recipientCryptoId}`
+        `Delivering ${queuedMessages.length} queued messages to ${recipientCryptoId}`
       );
 
       // Get sender usernames for the messages
@@ -176,7 +176,7 @@ class MessageQueueService {
             deliveredCount++;
 
             console.log(
-              `✅ Delivered queued message ${message.message_id} to ${recipientCryptoId}`
+              `Delivered queued message ${message.message_id} to ${recipientCryptoId}`
             );
           } else {
             // User went offline during processing
@@ -189,7 +189,7 @@ class MessageQueueService {
           }
         } catch (error) {
           console.error(
-            `❌ Failed to deliver message ${message.message_id}:`,
+            `Failed to deliver message ${message.message_id}:`,
             error
           );
           await db.markMessageFailed(
@@ -202,7 +202,7 @@ class MessageQueueService {
       }
 
       console.log(
-        `📊 Queue delivery complete for ${recipientCryptoId}: ${deliveredCount} delivered, ${failedCount} failed`
+        `Queue delivery complete for ${recipientCryptoId}: ${deliveredCount} delivered, ${failedCount} failed`
       );
     } catch (error) {
       console.error(
@@ -264,7 +264,7 @@ class MessageQueueService {
    */
   async onUserOnline(cryptoProfileId) {
     try {
-      console.log(`👤 User ${cryptoProfileId} came online, checking queue...`);
+      console.log(`User ${cryptoProfileId} came online, checking queue...`);
 
       // Update presence status
       await db.updateUserPresence(cryptoProfileId, "online", 1);
@@ -285,7 +285,7 @@ class MessageQueueService {
    */
   async onUserOffline(cryptoProfileId) {
     try {
-      console.log(`👤 User ${cryptoProfileId} went offline`);
+      console.log(`User ${cryptoProfileId} went offline`);
 
       // Update presence status
       await db.updateUserPresence(cryptoProfileId, "offline", -1);
@@ -305,11 +305,20 @@ class MessageQueueService {
     try {
       const result = await db.query(`
         SELECT 
-          queue_status,
+          CASE 
+            WHEN processed_at IS NOT NULL THEN 'delivered'
+            WHEN failed_at IS NOT NULL THEN 'failed'
+            ELSE 'pending'
+          END as status,
           COUNT(*) as count,
           AVG(retry_count) as avg_retries
         FROM message_queue 
-        GROUP BY queue_status
+        GROUP BY 
+          CASE 
+            WHEN processed_at IS NOT NULL THEN 'delivered'
+            WHEN failed_at IS NOT NULL THEN 'failed'
+            ELSE 'pending'
+          END
       `);
 
       const stats = {
@@ -318,7 +327,7 @@ class MessageQueueService {
       };
 
       result.rows.forEach((row) => {
-        stats.byStatus[row.queue_status] = {
+        stats.byStatus[row.status] = {
           count: parseInt(row.count),
           avgRetries: parseFloat(row.avg_retries) || 0,
         };
@@ -341,7 +350,7 @@ class MessageQueueService {
 
       if (results.expiredMessages > 0) {
         console.log(
-          `🧹 Cleaned up ${results.expiredMessages} expired messages and queue entries`
+          `Cleaned up ${results.expiredMessages} expired messages and queue entries`
         );
       }
 
@@ -358,7 +367,7 @@ class MessageQueueService {
    */
   async forceProcessUser(cryptoProfileId) {
     try {
-      console.log(`🔄 Force processing queue for user ${cryptoProfileId}`);
+      console.log(`� Force processing queue for user ${cryptoProfileId}`);
       await this.deliverQueuedMessages(cryptoProfileId);
     } catch (error) {
       console.error(`Error force processing user ${cryptoProfileId}:`, error);

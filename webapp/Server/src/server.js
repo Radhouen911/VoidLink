@@ -3,12 +3,13 @@ const cors = require("cors");
 const helmet = require("helmet");
 const { createServer } = require("http");
 const WebSocketManager = require("./websocket/websocket-manager");
+const db = require("./database/db");
 
 const app = express();
 const server = createServer(app);
 
-// Initialize WebSocket Manager with two-layer authentication
-const wsManager = new WebSocketManager(server);
+// WebSocket manager will be initialized after database is ready
+let wsManager = null;
 
 // Middleware
 app.use(helmet());
@@ -29,6 +30,13 @@ app.use("/api/contacts", require("./routes/contacts"));
 
 // WebSocket statistics endpoint
 app.get("/api/websocket/stats", (req, res) => {
+  if (!wsManager) {
+    return res.status(503).json({
+      error: "SERVICE_UNAVAILABLE",
+      message: "WebSocket service not initialized yet",
+    });
+  }
+
   res.json({
     success: true,
     data: wsManager.getStats(),
@@ -71,32 +79,64 @@ app.use((error, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
-server.listen(PORT, () => {
-  console.log(`🔐 VoidLink Server v2.0 running on port ${PORT}`);
-  console.log(`📡 WebSocket server ready at ws://localhost:${PORT}/ws`);
-  console.log(`🛡️  Two-layer authentication system active`);
-  console.log(`⚡ Real-time messaging with crypto session validation`);
-  console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
-  console.log(
-    `📈 WebSocket stats: http://localhost:${PORT}/api/websocket/stats`
-  );
-});
+// Initialize services and start server
+async function startServer() {
+  try {
+    console.log("Starting VoidLink Server...");
+
+    // Initialize database FIRST and wait for it to complete
+    console.log("Initializing database schema...");
+    await db.initializeDatabase();
+    console.log("Database initialization complete");
+
+    // Initialize WebSocket Manager AFTER database is ready
+    console.log("Initializing WebSocket Manager...");
+    wsManager = new WebSocketManager(server);
+
+    // Start message queue service AFTER database is confirmed ready
+    wsManager.startMessageQueue();
+
+    console.log("WebSocket Manager initialized");
+
+    // Start HTTP server
+    server.listen(PORT, () => {
+      console.log(`VoidLink Server v2.0 running on port ${PORT}`);
+      console.log(`WebSocket server ready at ws://localhost:${PORT}/ws`);
+      console.log(`Two-layer authentication system active`);
+      console.log(`Real-time messaging with crypto session validation`);
+      console.log(`Health check: http://localhost:${PORT}/api/health`);
+      console.log(
+        `WebSocket stats: http://localhost:${PORT}/api/websocket/stats`
+      );
+    });
+  } catch (error) {
+    console.error("Server startup failed:", error);
+    process.exit(1);
+  }
+}
+
+// Start the server
+startServer();
 
 // Graceful shutdown
 process.on("SIGTERM", async () => {
-  console.log("🛑 SIGTERM received, shutting down gracefully...");
-  await wsManager.shutdown();
+  console.log("SIGTERM received, shutting down gracefully...");
+  if (wsManager) {
+    await wsManager.shutdown();
+  }
   server.close(() => {
-    console.log("✅ Server shutdown complete");
+    console.log("Server shutdown complete");
     process.exit(0);
   });
 });
 
 process.on("SIGINT", async () => {
-  console.log("🛑 SIGINT received, shutting down gracefully...");
-  await wsManager.shutdown();
+  console.log("SIGINT received, shutting down gracefully...");
+  if (wsManager) {
+    await wsManager.shutdown();
+  }
   server.close(() => {
-    console.log("✅ Server shutdown complete");
+    console.log("Server shutdown complete");
     process.exit(0);
   });
 });

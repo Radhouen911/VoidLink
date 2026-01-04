@@ -28,11 +28,11 @@ class WebSocketManager {
     this.setupEventHandlers();
     this.startCleanupInterval();
 
-    // Start message queue service
-    this.messageQueueService.start();
+    // Start message queue service - moved to be started explicitly after DB init
+    // this.messageQueueService.start();
 
     console.log(
-      "🚀 WebSocket Manager initialized with two-layer authentication and message queue"
+      "WebSocket Manager initialized with two-layer authentication and message queue"
     );
   }
 
@@ -56,14 +56,14 @@ class WebSocketManager {
    */
   setupEventHandlers() {
     this.wss.on("connection", async (ws, req) => {
-      console.log("🔗 New WebSocket connection attempt");
+      console.log("New WebSocket connection attempt");
 
       try {
         // Authenticate the connection with two-layer validation
         const userContext = await WebSocketAuth.authenticateConnection(ws, req);
 
         if (!userContext) {
-          console.log("❌ WebSocket authentication failed");
+          console.log("WebSocket authentication failed");
           return; // Connection already closed by auth middleware
         }
 
@@ -85,7 +85,7 @@ class WebSocketManager {
         // Send welcome message
         this.sendWelcomeMessage(ws, userContext);
 
-        console.log(`✅ WebSocket authenticated: ${userContext.username}`);
+        console.log(`WebSocket authenticated: ${userContext.username}`);
       } catch (error) {
         console.error("WebSocket connection error:", error);
         ws.close(1011, "Connection setup failed");
@@ -96,7 +96,7 @@ class WebSocketManager {
       console.error("WebSocket server error:", error);
     });
 
-    console.log("📡 WebSocket event handlers configured");
+    console.log("WebSocket event handlers configured");
   }
 
   /**
@@ -135,7 +135,7 @@ class WebSocketManager {
     // Handle connection close
     ws.on("close", (code, reason) => {
       console.log(
-        `🔌 WebSocket disconnected: ${userContext.username} (${code}: ${reason})`
+        `WebSocket disconnected: ${userContext.username} (${code}: ${reason})`
       );
 
       // Remove connection and check if user went offline
@@ -212,7 +212,7 @@ class WebSocketManager {
       this.pingAllConnections();
     }, 30 * 1000);
 
-    console.log("🧹 WebSocket cleanup intervals started");
+    console.log("WebSocket cleanup intervals started");
   }
 
   /**
@@ -221,7 +221,7 @@ class WebSocketManager {
   pingAllConnections() {
     this.wss.clients.forEach((ws) => {
       if (ws.isAlive === false) {
-        console.log("💀 Terminating dead WebSocket connection");
+        console.log("� Terminating dead WebSocket connection");
         this.connectionManager.removeConnection(ws);
         return ws.terminate();
       }
@@ -232,9 +232,14 @@ class WebSocketManager {
   }
 
   /**
-   * Get WebSocket server statistics
-   * @returns {Object} Server statistics
+   * Start the message queue service (called after database is ready)
    */
+  startMessageQueue() {
+    this.messageQueueService.start();
+    console.log(
+      "Message Queue Service started after database initialization"
+    );
+  }
   getStats() {
     return {
       websocketServer: {
@@ -273,7 +278,7 @@ class WebSocketManager {
    * Gracefully shutdown WebSocket server
    */
   async shutdown() {
-    console.log("🛑 Shutting down WebSocket server...");
+    console.log("� Shutting down WebSocket server...");
 
     // Stop message queue service
     this.messageQueueService.stop();
@@ -292,7 +297,7 @@ class WebSocketManager {
     // Close WebSocket server
     return new Promise((resolve) => {
       this.wss.close(() => {
-        console.log("✅ WebSocket server shutdown complete");
+        console.log("WebSocket server shutdown complete");
         resolve();
       });
     });
