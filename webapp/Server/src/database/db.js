@@ -70,8 +70,9 @@ async function initializeDatabase() {
       );
 
       if (missingTables.length === 0) {
-        console.log("Database schema verified - all required tables exist");
-        return;
+        console.log("Database tables verified - proceeding to update functions/schema...");
+      } else {
+        console.log(`Missing tables: ${missingTables.join(", ")}`);
       }
 
       console.log(`Missing tables: ${missingTables.join(", ")}`);
@@ -253,7 +254,6 @@ const db = {
     );
   },
 
-  // Audit logging helper - now fully functional
   async logAuditEvent(
     accountId,
     cryptoProfileId,
@@ -264,6 +264,14 @@ const db = {
     metadata = {}
   ) {
     try {
+      let metadataJson = "{}";
+      try {
+        metadataJson = JSON.stringify(metadata);
+      } catch (e) {
+        console.error("Failed to stringify metadata:", e);
+        metadataJson = JSON.stringify({ error: "Metadata stringify failed" });
+      }
+
       await pool.query(
         `
         INSERT INTO audit_events (account_id, crypto_profile_id, event_type, event_category, ip_address, user_agent, metadata) 
@@ -276,7 +284,7 @@ const db = {
           eventCategory,
           ipAddress,
           userAgent,
-          JSON.stringify(metadata),
+          metadataJson,
         ]
       );
     } catch (error) {
@@ -286,20 +294,15 @@ const db = {
 
   // Message queue helpers - now fully functional
   async queueMessage(messageId, recipientCryptoId, priority = 0) {
-    try {
-      const result = await pool.query(
-        `
-        INSERT INTO message_queue (message_id, recipient_crypto_id, priority) 
-        VALUES ($1, $2, $3) 
-        RETURNING id, created_at
-      `,
-        [messageId, recipientCryptoId, priority]
-      );
-      return result.rows[0];
-    } catch (error) {
-      console.log(`Message queue error: ${error.message}`);
-      return { id: null, created_at: new Date() };
-    }
+    const result = await pool.query(
+      `
+      INSERT INTO message_queue (message_id, recipient_crypto_id, priority) 
+      VALUES ($1, $2, $3) 
+      RETURNING id, created_at
+    `,
+      [messageId, recipientCryptoId, priority]
+    );
+    return result.rows[0];
   },
 
   async getQueuedMessages(recipientCryptoId) {
@@ -319,7 +322,7 @@ const db = {
       );
       return result.rows;
     } catch (error) {
-      console.log(`Get queued messages error: ${error.message}`);
+      console.error(`Get queued messages error: ${error.message}`);
       return [];
     }
   },

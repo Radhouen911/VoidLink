@@ -96,9 +96,12 @@ export const Register: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-void-black flex items-center justify-center px-4 animate-fade-in">
-      <div className="card max-w-md w-full p-8">
-        <h1 className="text-3xl font-bold text-center mb-2 text-void-text">
+    <div className="min-h-screen flex items-center justify-center px-4 animate-fade-in relative">
+      <div className="card max-w-md w-full p-8 animate-fade-in">
+        <h1
+          className="text-3xl font-bold text-center mb-2 text-gradient"
+          data-testid="register-title"
+        >
           Create Your Account
         </h1>
         <p className="text-center text-void-text-dim mb-6">
@@ -108,6 +111,8 @@ export const Register: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
             label="Username"
+            name="username"
+            data-testid="username-input"
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
@@ -118,6 +123,8 @@ export const Register: React.FC = () => {
 
           <Input
             label="Password"
+            name="password"
+            data-testid="password-input"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -128,6 +135,8 @@ export const Register: React.FC = () => {
 
           <Input
             label="Confirm Password"
+            name="confirmPassword"
+            data-testid="confirm-password-input"
             type="password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
@@ -136,7 +145,7 @@ export const Register: React.FC = () => {
             disabled={isLoading}
           />
 
-          <div className="border-t border-void-purple pt-4 mt-4">
+          <div className="border-t border-void-purple/30 pt-4 mt-4">
             <div className="mb-4">
               <h3 className="text-sm font-semibold text-void-text mb-2">
                 🔐 Encryption Passphrase
@@ -149,6 +158,8 @@ export const Register: React.FC = () => {
 
             <Input
               label="Passphrase"
+              name="passphrase"
+              data-testid="passphrase-input"
               type="password"
               value={passphrase}
               onChange={(e) => setPassphrase(e.target.value)}
@@ -159,6 +170,8 @@ export const Register: React.FC = () => {
 
             <Input
               label="Confirm Passphrase"
+              name="confirmPassphrase"
+              data-testid="confirm-passphrase-input"
               type="password"
               value={confirmPassphrase}
               onChange={(e) => setConfirmPassphrase(e.target.value)}
@@ -167,7 +180,7 @@ export const Register: React.FC = () => {
               disabled={isLoading}
             />
 
-            <div className="bg-void-warning/10 border border-void-warning/30 rounded p-3 text-xs text-void-text-dim mt-3">
+            <div className="glass-light border border-void-warning/30 rounded-xl p-3 text-xs text-void-text-dim mt-3">
               <span className="text-void-warning">⚠️ Critical:</span> Your
               passphrase encrypts your private key both locally and on the
               server. If you lose it, you cannot recover your account.
@@ -191,7 +204,7 @@ export const Register: React.FC = () => {
           Already have an account?{" "}
           <button
             onClick={() => navigate("/login")}
-            className="text-void-accent hover:underline"
+            className="text-void-accent hover:underline transition-all"
             disabled={isLoading}
           >
             Login

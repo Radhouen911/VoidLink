@@ -17,10 +17,25 @@ test("Complete flow: Register 2 users, add contacts, send messages", async ({
     passphrase: "bob-secret-passphrase",
   };
 
+  // Track API requests to verify no excessive polling
+  const apiRequests: { url: string; timestamp: number; page: string }[] = [];
+
   // ========== STEP 1: REGISTER ALICE ==========
   console.log("\n========== REGISTERING ALICE ==========");
   const aliceContext = await browser.newContext();
   const alicePage = await aliceContext.newPage();
+
+  // Track Alice's requests
+  alicePage.on("request", (request) => {
+    const url = request.url();
+    if (
+      url.includes("/api/messages/conversation/") ||
+      (url.includes("/api/contacts") && !url.includes("request")) ||
+      url.includes("/api/messages/inbox")
+    ) {
+      apiRequests.push({ url, timestamp: Date.now(), page: "alice" });
+    }
+  });
 
   await alicePage.goto("http://localhost:3000/register");
   await alicePage.waitForLoadState("networkidle");
@@ -58,6 +73,18 @@ test("Complete flow: Register 2 users, add contacts, send messages", async ({
   console.log("\n========== REGISTERING BOB ==========");
   const bobContext = await browser.newContext();
   const bobPage = await bobContext.newPage();
+
+  // Track Bob's requests
+  bobPage.on("request", (request) => {
+    const url = request.url();
+    if (
+      url.includes("/api/messages/conversation/") ||
+      (url.includes("/api/contacts") && !url.includes("request")) ||
+      url.includes("/api/messages/inbox")
+    ) {
+      apiRequests.push({ url, timestamp: Date.now(), page: "bob" });
+    }
+  });
 
   await bobPage.goto("http://localhost:3000/register");
   await bobPage.waitForLoadState("networkidle");
@@ -220,6 +247,37 @@ test("Complete flow: Register 2 users, add contacts, send messages", async ({
   console.log("- Bob received message:", messageVisible ? "✅" : "❌");
   console.log("- Bob sent reply:", replyVisible ? "✅" : "❌");
   console.log("- Alice received reply:", replyVisible ? "✅" : "❌");
+
+  // ========== VERIFY NO EXCESSIVE POLLING ==========
+  console.log("\n========== POLLING VERIFICATION ==========");
+
+  const conversationRequests = apiRequests.filter((r) =>
+    r.url.includes("/api/messages/conversation/")
+  );
+  const contactsRequests = apiRequests.filter(
+    (r) => r.url.includes("/api/contacts") && !r.url.includes("request")
+  );
+  const inboxRequests = apiRequests.filter((r) =>
+    r.url.includes("/api/messages/inbox")
+  );
+
+  console.log(`Total API requests tracked: ${apiRequests.length}`);
+  console.log(
+    `- Conversation requests: ${conversationRequests.length} (expected: ≤2, one per user opening conversation)`
+  );
+  console.log(
+    `- Contacts list requests: ${contactsRequests.length} (expected: ≤2, initial load only)`
+  );
+  console.log(
+    `- Inbox requests: ${inboxRequests.length} (expected: 0, WebSocket only)`
+  );
+
+  // Verify no excessive polling
+  expect(conversationRequests.length).toBeLessThanOrEqual(2); // One per user when opening conversation
+  expect(contactsRequests.length).toBeLessThanOrEqual(2); // Initial load only
+  expect(inboxRequests.length).toBe(0); // Should never poll inbox
+
+  console.log("✅ No excessive polling detected!");
 
   // Fail test if messages didn't work
   expect(messageVisible).toBe(true);

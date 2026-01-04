@@ -11,6 +11,29 @@
 
   body {
     @apply bg-void-black text-void-text font-sans antialiased;
+    background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0a0a0f 100%);
+    background-attachment: fixed;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(
+        circle at 20% 50%,
+        rgba(0, 212, 255, 0.1) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        circle at 80% 80%,
+        rgba(138, 43, 226, 0.1) 0%,
+        transparent 50%
+      );
+    pointer-events: none;
+    z-index: 0;
   }
 
   html {
@@ -19,46 +42,91 @@
 }
 
 @layer components {
+  /* Glass morphism base */
+  .glass {
+    background: rgba(20, 20, 30, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .glass-strong {
+    background: rgba(20, 20, 30, 0.85);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+  }
+
+  .glass-light {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  /* Buttons with glass effect */
   .btn {
-    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply px-4 py-2 rounded-xl font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95;
   }
 
   .btn-primary {
-    @apply btn bg-void-accent text-void-black hover:bg-void-accent/90 hover:shadow-lg hover:shadow-void-accent/50;
+    @apply btn bg-gradient-to-r from-void-accent to-void-blue text-void-black hover:shadow-2xl hover:shadow-void-accent/50 backdrop-blur-sm;
   }
 
   .btn-secondary {
-    @apply btn bg-void-purple text-void-text hover:bg-void-blue;
+    @apply btn glass text-void-text hover:bg-void-purple/30 hover:border-void-purple/50;
   }
 
   .btn-danger {
-    @apply btn bg-void-danger text-white hover:bg-void-danger/90;
+    @apply btn bg-gradient-to-r from-void-danger to-red-600 text-white hover:shadow-2xl hover:shadow-void-danger/50;
   }
 
+  /* Glass input */
   .input {
-    @apply w-full px-4 py-2 bg-void-dark border border-void-text-dim/30 rounded-lg text-void-text placeholder-void-text-dim/50 focus:outline-none focus:border-void-accent focus:ring-2 focus:ring-void-accent/20 transition-all;
+    @apply w-full px-4 py-3 glass rounded-xl text-void-text placeholder-void-text-dim/50 focus:outline-none focus:border-void-accent/50 focus:ring-2 focus:ring-void-accent/30 transition-all duration-300;
   }
 
+  /* Glass card */
   .card {
-    @apply bg-void-dark border border-void-text-dim/20 rounded-lg p-6 shadow-lg;
+    @apply glass-strong rounded-2xl p-6 shadow-2xl hover:shadow-void-accent/20 transition-all duration-300;
   }
 
+  /* Modal with glass effect */
   .modal-backdrop {
-    @apply fixed inset-0 bg-black/80 backdrop-blur-sm z-40;
+    @apply fixed inset-0 bg-black/60 backdrop-blur-md z-40;
   }
 
   .modal-content {
     @apply fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md;
   }
+
+  /* Message bubbles with glass */
+  .message-bubble {
+    @apply glass-light rounded-2xl p-4 shadow-lg backdrop-blur-xl transition-all duration-300 hover:shadow-xl;
+  }
+
+  .message-bubble-sent {
+    @apply bg-gradient-to-br from-void-accent/20 to-void-blue/20 backdrop-blur-xl border border-void-accent/30;
+  }
+
+  .message-bubble-received {
+    @apply glass-light border-void-purple/30;
+  }
 }
 
 @layer utilities {
   .text-gradient {
-    @apply bg-gradient-to-r from-void-accent to-void-success bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-void-accent via-void-blue to-void-success bg-clip-text text-transparent;
   }
 
   .glow-text {
-    text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
+    text-shadow: 0 0 10px currentColor, 0 0 20px currentColor,
+      0 0 30px currentColor;
+  }
+
+  .glow-border {
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.3),
+      inset 0 0 20px rgba(0, 212, 255, 0.1);
   }
 
   .scrollbar-hide {
@@ -69,20 +137,37 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+
+  /* Floating animation */
+  .float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
 }
 
 /* Custom scrollbar for webkit browsers */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-void-dark;
+  @apply bg-void-black/50 rounded-full;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-void-text-dim/30 rounded-full hover:bg-void-text-dim/50;
+  @apply bg-gradient-to-b from-void-accent/50 to-void-blue/50 rounded-full hover:from-void-accent hover:to-void-blue;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
 /* Page Transition Animations */

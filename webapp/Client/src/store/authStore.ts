@@ -5,6 +5,7 @@ interface User {
   username: string;
   publicKey: string;
   cryptoProfileId?: string;
+  presenceStatus?: "online" | "away" | "busy" | "offline";
 }
 
 interface AuthState {
@@ -18,6 +19,7 @@ interface AuthState {
   setUser: (user: User) => void;
   setAccountToken: (token: string) => void;
   setCryptoToken: (token: string) => void;
+  setPresenceStatus: (status: "online" | "away" | "busy" | "offline") => void;
   logout: () => void;
   initialize: () => void;
 }
@@ -39,6 +41,12 @@ export const useAuthStore = create<AuthState>((set) => ({
   setCryptoToken: (token) => {
     SecureStorage.setCryptoToken(token);
     set({ cryptoToken: token });
+  },
+
+  setPresenceStatus: (status) => {
+    set((state) => ({
+      user: state.user ? { ...state.user, presenceStatus: status } : null,
+    }));
   },
 
   logout: () => {

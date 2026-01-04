@@ -11,6 +11,7 @@ import { useWebSocket } from "../hooks/useWebSocket";
 import { api } from "../services/api";
 import { getSessionPrivateKey } from "../services/auth";
 import { websocket } from "../services/websocket";
+import { useAuthStore } from "../store/authStore";
 import { useChatStore } from "../store/chatStore";
 import { useContactStore } from "../store/contactStore";
 
@@ -28,6 +29,8 @@ export const Chat: React.FC = () => {
     setActiveConversation,
     addMessage,
     addMessages,
+    updateMessageId,
+    updateMessageStatus
   } = useChatStore();
 
   const [messageInput, setMessageInput] = useState("");
@@ -35,88 +38,284 @@ export const Chat: React.FC = () => {
   const [showAddContact, setShowAddContact] = useState(false);
   const [searchUsername, setSearchUsername] = useState("");
   const [contactMessage, setContactMessage] = useState("");
+  const [typingTimeout, setTypingTimeout] = useState<ReturnType<
+    typeof setTimeout
+  > | null>(null);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [userAutoScrolled, setUserAutoScrolled] = useState(true); // Track if user is at bottom
 
-  useEffect(() => {
-    loadContacts();
-    loadPendingRequests();
+  const messagesEndRef = React.useRef<HTMLDivElement>(null);
+  const messagesContainerRef = React.useRef<HTMLDivElement>(null);
 
-    // Poll for pending requests every 3 seconds
-    const pollPendingInterval = setInterval(() => {
-      loadPendingRequests();
-    }, 3000);
+  const scrollToBottom = (smooth = true) => {
+    messagesEndRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "auto" });
+  };
 
-    // Poll for contacts (to update online status) every 5 seconds
-    const pollContactsInterval = setInterval(() => {
-      loadContacts();
-    }, 5000);
-
-    return () => {
-      clearInterval(pollPendingInterval);
-      clearInterval(pollContactsInterval);
-    };
-  }, []);
-
-  // Load conversation history when a contact is selected
+  // Scroll to bottom when switching conversations
   useEffect(() => {
     if (activeConversation) {
+      setHasMoreMessages(true);
+      setUserAutoScrolled(true);
+      scrollToBottom(false); // Instant scroll on switch
       loadConversationHistory(activeConversation);
-
-      // Poll for new messages every 2 seconds while conversation is active
-      const pollMessagesInterval = setInterval(() => {
-        loadConversationHistory(activeConversation);
-      }, 2000);
-
-      return () => clearInterval(pollMessagesInterval);
     }
   }, [activeConversation]);
 
-  const loadConversationHistory = async (username: string) => {
-    try {
-      const response: any = await api.getConversation(username, undefined, 50);
-      const messagesData = response.data?.conversation || [];
+  // Handle auto-scroll on new messages
+  useEffect(() => {
+    if (!activeConversation) return;
 
-      if (messagesData.length > 0) {
-        console.log(`Loading ${messagesData.length} messages for ${username}`);
+    const conversation = conversations.get(activeConversation);
+    if (!conversation) return;
 
-        // Get contact info for public key
-        const contact = contacts.find((c) => c.username === username);
-        if (!contact) {
-          console.error("Contact not found for conversation:", username);
+    // Only scroll if we were already at bottom or if it's our own message
+    if (userAutoScrolled || conversation.lastMessage?.senderUsername === user?.username) {
+      scrollToBottom();
+    }
+  }, [conversations, activeConversation, userAutoScrolled, user?.username]);
+
+  // Track scroll position to determine if user is at bottom
+  const handleScrollEvents = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    const isAtBottom = Math.abs(target.scrollHeight - target.scrollTop - target.clientHeight) < 50;
+    setUserAutoScrolled(isAtBottom);
+    handleScroll(e);
+  }
+
+  // Infinite scroll handler
+  const handleScroll = async (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+
+    // Check if scrolled to top
+    if (
+      target.scrollTop === 0 &&
+      !isLoadingMore &&
+      hasMoreMessages &&
+      activeConversation
+    ) {
+      const conversation = conversations.get(activeConversation);
+      if (!conversation || conversation.messages.length === 0) return;
+
+      // Get oldest message timestamp
+      const oldestMessage = conversation.messages[0];
+      const oldestTimestamp = oldestMessage.createdAt;
+
+      setIsLoadingMore(true);
+
+      try {
+        const response: any = await api.getConversation(
+          activeConversation,
+          oldestTimestamp,
+          30 // Load 30 more messages
+        );
+        const messagesData = response.data?.conversation || [];
+
+        if (messagesData.length === 0) {
+          setHasMoreMessages(false);
           return;
         }
 
-        // Map backend format to frontend format
-        // Backend returns: { messageId, encryptedPayload, messageType, direction, delivered, createdAt }
-        // direction is "sent" or "received"
+        const contact = contacts.find((c) => c.username === activeConversation);
+        if (!contact) return;
+
+        const privateKey = getSessionPrivateKey();
+
         const mappedMessages = messagesData.map((msg: any) => {
           const isSent = msg.direction === "sent";
+
+          let decryptedContent = "[Encrypted]";
+
+          // Decrypt if we have keys
+          if (privateKey) {
+            const otherPartyKey = isSent ? msg.recipientId : msg.senderId;
+            const keyToUse = otherPartyKey || contact.publicKey;
+
+            if (keyToUse) {
+              try {
+                const decrypted = decryptMessage(msg.encryptedPayload, keyToUse, privateKey);
+                if (decrypted) decryptedContent = decrypted;
+              } catch (e) {
+                // console.error("History decryption failed", e);
+              }
+            }
+          }
 
           return {
             id: msg.messageId,
             senderId: isSent ? user?.publicKey || "" : contact.publicKey,
-            senderUsername: isSent ? user?.username || "" : username,
+            senderUsername: isSent ? user?.username || "" : activeConversation,
             recipientId: isSent ? contact.publicKey : user?.publicKey || "",
-            recipientUsername: isSent ? username : user?.username || "",
+            recipientUsername: isSent
+              ? activeConversation
+              : user?.username || "",
             encryptedPayload: msg.encryptedPayload,
-            decryptedContent: "[Encrypted]", // Will decrypt on display
+            decryptedContent: decryptedContent,
             messageType: msg.messageType || "message",
             delivered: msg.delivered || false,
+            read: msg.read || false,
             createdAt: msg.createdAt,
+            status: 'sent' // Historical messages are sent
+          };
+        });
+
+        // Prepend older messages
+        addMessages(activeConversation, mappedMessages.reverse());
+
+        // Maintain scroll position
+        const scrollHeightBefore = target.scrollHeight;
+        setTimeout(() => {
+          const scrollHeightAfter = target.scrollHeight;
+          target.scrollTop = scrollHeightAfter - scrollHeightBefore;
+        }, 0);
+      } catch (error) {
+        console.error("Failed to load more messages:", error);
+      } finally {
+        setIsLoadingMore(false);
+      }
+    }
+  };
+
+
+  useEffect(() => {
+    const initializeChat = async () => {
+      try {
+        await loadContacts();
+        await loadPendingRequests();
+      } catch (error) {
+        console.error("Failed to initialize chat:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeChat();
+    initializeChat();
+  }, []);
+
+  // Reactive Decryption: Retry decrypting messages if they are still encrypted and contacts/keys become available
+  useEffect(() => {
+    if (!activeConversation || !conversations.get(activeConversation)?.messages) return;
+
+    const conversation = conversations.get(activeConversation);
+    const needsDecryption = conversation?.messages.some(m => !m.decryptedContent || m.decryptedContent === "[Encrypted]");
+
+    if (needsDecryption) {
+      // console.log("Retrying decryption for active conversation...");
+      const contact = contacts.find(c => c.username === activeConversation);
+      const privateKey = getSessionPrivateKey();
+
+      if (contact && privateKey) {
+        const updatedMessages = conversation!.messages.map(msg => {
+          if (msg.decryptedContent && msg.decryptedContent !== "[Encrypted]") return msg;
+
+          const isSent = msg.senderUsername === user?.username;
+          const otherPartyKey = isSent ? msg.recipientId : msg.senderId;
+          const keyToUse = otherPartyKey || contact.publicKey;
+
+          if (keyToUse) {
+            try {
+              const decrypted = decryptMessage(msg.encryptedPayload, keyToUse, privateKey);
+              if (decrypted) {
+                return { ...msg, decryptedContent: decrypted };
+              }
+            } catch (e) {
+              // still failing
+            }
+          }
+          return msg;
+        });
+
+        // Only update if changed
+        addMessages(activeConversation, updatedMessages); // addMessages handles upsert/sort
+      }
+    }
+  }, [contacts, activeConversation, conversations, user?.username]);
+
+  // Load conversation history when a contact is selected (one-time load)
+  // MOVED logic to the new useEffect above dependent on activeConversation
+
+  const loadConversationHistory = async (username: string) => {
+    try {
+      console.log(`Loading conversation history for ${username}...`);
+      const response: any = await api.getConversation(username, undefined, 30); // Load only 30 most recent
+      const messagesData = response.data?.conversation || [];
+
+      console.log(`Received ${messagesData.length} messages for ${username}`);
+
+      if (messagesData.length > 0) {
+        // Get contact info for public key
+        const contact = contacts.find((c) => c.username === username);
+        const privateKey = getSessionPrivateKey();
+
+        // If contact missing, just log warning but proceed (messages will be encrypted)
+        if (!contact) {
+          console.warn(`Contact ${username} not found in store, messages will remain encrypted`);
+        }
+
+        // Map backend format to frontend format AND DECRYPT IMMEDIATELY
+        const mappedMessages = messagesData.map((msg: any) => {
+          const isSent = msg.direction === "sent";
+
+          let decryptedContent = "[Encrypted]";
+
+          // Decrypt if we have keys and contact
+          if (privateKey && contact) {
+            const otherPartyKey = isSent ? msg.recipientId : msg.senderId;
+            // Fallback to contact key if missing in msg (common in older msgs)
+            const keyToUse = otherPartyKey || contact.publicKey;
+
+            if (keyToUse) {
+              try {
+                const decrypted = decryptMessage(msg.encryptedPayload, keyToUse, privateKey);
+                if (decrypted) decryptedContent = decrypted;
+              } catch (e) {
+                // console.error("History decryption failed", e);
+              }
+            }
+          }
+
+          return {
+            id: msg.messageId,
+            senderId: isSent ? user?.publicKey || "" : (contact?.publicKey || ""),
+            senderUsername: isSent ? user?.username || "" : username,
+            recipientId: isSent ? (contact?.publicKey || "") : user?.publicKey || "",
+            recipientUsername: isSent ? username : user?.username || "",
+            encryptedPayload: msg.encryptedPayload,
+            decryptedContent: decryptedContent,
+            messageType: msg.messageType || "message",
+            delivered: msg.delivered || false,
+            read: msg.read || false,
+            createdAt: msg.createdAt,
+            status: 'sent' // Historical are sent
           };
         });
 
         // Add messages to store (backend returns newest first, reverse for chronological)
         addMessages(username, mappedMessages.reverse());
+        console.log(
+          `Added ${mappedMessages.length} messages to store for ${username}`
+        );
+
+        // If we got less than 30, there are no more messages
+        if (messagesData.length < 30) {
+          setHasMoreMessages(false);
+        }
+      } else {
+        setHasMoreMessages(false);
       }
     } catch (error: any) {
       console.error("Failed to load conversation:", error);
-      // Don't show error toast - it's not critical
+      if (error.status === 401) {
+        showToast("✗ Session expired. Please login again.", "error");
+      }
+      // Don't show error toast for other errors - it's not critical
     }
   };
 
   // Decrypt a message for display
   const decryptMessageContent = (msg: any): string => {
-    // If already decrypted, return it
+    // If we sent it and have decrypted content (optimistic), return it
     if (msg.decryptedContent && msg.decryptedContent !== "[Encrypted]") {
       return msg.decryptedContent;
     }
@@ -156,13 +355,7 @@ export const Chat: React.FC = () => {
       return "[Missing encryption key]";
     }
 
-    console.log("Attempting to decrypt message:", {
-      messageId: msg.id,
-      isSender,
-      otherPartyUsername: contact.username,
-      otherPartyPublicKeyLength: otherPartyPublicKey?.length,
-      myPrivateKeyLength: privateKey?.length,
-    });
+    // console.log("Attempting to decrypt message:", { ... }); // Reduced logging
 
     try {
       const decrypted = decryptMessage(
@@ -170,13 +363,12 @@ export const Chat: React.FC = () => {
         otherPartyPublicKey,
         privateKey
       );
-      console.log("Message decrypted successfully:", msg.id);
+      // console.log("Message decrypted successfully:", msg.id);
       return decrypted || "[Decryption failed]";
     } catch (error) {
       console.error("Decryption error:", {
         messageId: msg.id,
         error: error,
-        otherPartyPublicKey: otherPartyPublicKey?.substring(0, 20) + "...",
       });
       return "[Decryption failed]";
     }
@@ -184,6 +376,7 @@ export const Chat: React.FC = () => {
 
   const loadContacts = async () => {
     try {
+      console.log("Loading contacts...");
       const response: any = await api.getContacts();
       const contactsData = response.data?.contacts || [];
 
@@ -207,25 +400,18 @@ export const Chat: React.FC = () => {
         acceptedAt: contact.acceptedAt || contact.accepted_at,
       }));
 
-      console.log(
-        "Loaded contacts with keys:",
-        mappedContacts.map((c) => ({
-          username: c.username,
-          hasPublicKey: !!c.publicKey,
-          publicKeyLength: c.publicKey?.length,
-        }))
-      );
-
-      console.log("Loaded contacts:", mappedContacts);
+      console.log(`Loaded ${mappedContacts.length} contacts`);
       setContacts(mappedContacts);
     } catch (error: any) {
       console.error("Failed to load contacts:", error);
-      showToast(
-        "✗ Failed to load contacts: " + (error.message || "Unknown error"),
-        "error"
-      );
-    } finally {
-      setIsLoading(false);
+      if (error.status === 401) {
+        showToast("✗ Session expired. Please login again.", "error");
+      } else {
+        showToast(
+          "✗ Failed to load contacts: " + (error.message || "Unknown error"),
+          "error"
+        );
+      }
     }
   };
 
@@ -233,11 +419,10 @@ export const Chat: React.FC = () => {
     try {
       console.log("Loading pending requests...");
       const response: any = await api.getPendingRequests();
-      console.log("Pending requests response:", response);
 
       // Backend returns data.pendingRequests, not data.requests
       const requests = response.data?.pendingRequests || [];
-      console.log("Pending requests array:", requests);
+      console.log(`Loaded ${requests.length} pending requests`);
 
       // Map backend format to frontend format
       const mappedRequests = requests.map((req: any) => ({
@@ -249,15 +434,58 @@ export const Chat: React.FC = () => {
       }));
 
       setPendingRequests(mappedRequests);
-      console.log("Set pending requests count:", mappedRequests.length);
     } catch (error: any) {
       console.error("Failed to load pending requests:", error);
-      showToast("✗ Failed to load pending requests", "error");
+      if (error.status === 401) {
+        showToast("✗ Session expired. Please login again.", "error");
+      } else {
+        showToast("✗ Failed to load pending requests", "error");
+      }
+    }
+  };
+
+  const handleMessageInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setMessageInput(value);
+
+    if (!activeConversation) return;
+
+    // Send typing_start when user starts typing
+    if (value.length > 0) {
+      websocket.send("typing_start", { recipientUsername: activeConversation });
+
+      // Clear existing timeout
+      if (typingTimeout) {
+        clearTimeout(typingTimeout);
+      }
+
+      // Set new timeout to send typing_stop after 3 seconds of inactivity
+      const timeout = setTimeout(() => {
+        websocket.send("typing_stop", {
+          recipientUsername: activeConversation,
+        });
+      }, 3000);
+
+      setTypingTimeout(timeout);
+    } else {
+      // If input is cleared, stop typing indicator
+      if (typingTimeout) {
+        clearTimeout(typingTimeout);
+        setTypingTimeout(null);
+      }
+      websocket.send("typing_stop", { recipientUsername: activeConversation });
     }
   };
 
   const handleSendMessage = async () => {
     if (!messageInput.trim() || !activeConversation) return;
+
+    // Stop typing indicator when sending
+    if (typingTimeout) {
+      clearTimeout(typingTimeout);
+      setTypingTimeout(null);
+    }
+    websocket.send("typing_stop", { recipientUsername: activeConversation });
 
     const contact = contacts.find((c) => c.username === activeConversation);
     if (!contact) {
@@ -267,7 +495,6 @@ export const Chat: React.FC = () => {
 
     if (!contact.publicKey) {
       showToast("✗ Contact public key not available. Try refreshing.", "error");
-      console.error("Contact missing public key:", contact);
       return;
     }
 
@@ -276,7 +503,6 @@ export const Chat: React.FC = () => {
         "✗ Contact crypto profile not available. Try refreshing.",
         "error"
       );
-      console.error("Contact missing cryptoProfileId:", contact);
       return;
     }
 
@@ -291,28 +517,40 @@ export const Chat: React.FC = () => {
       return;
     }
 
-    try {
-      console.log(
-        "Encrypting message for:",
-        contact.username,
-        "with recipient public key:",
-        contact.publicKey.substring(0, 20) + "...",
-        "length:",
-        contact.publicKey.length
-      );
+    // OPTIMISTIC UPDATE START
+    const tempId = "temp-" + Date.now();
+    const contentToSend = messageInput;
 
-      // Use proper encryption with sender's private key
+    // Clear input immediately
+    setMessageInput("");
+
+    try {
+      // 1. Add optimistic message to store
+      addMessage(activeConversation, {
+        id: tempId,
+        senderId: user?.publicKey || "",
+        senderUsername: user?.username || "",
+        recipientId: contact.publicKey,
+        recipientUsername: activeConversation,
+        encryptedPayload: "", // Not needed for local display of own message
+        decryptedContent: contentToSend,
+        messageType: "message",
+        delivered: false,
+        createdAt: new Date().toISOString(),
+        status: 'sending'
+      });
+
+      scrollToBottom(); // Ensure we see our new message
+
+      // 2. Encrypt
+      // console.log("Encrypting message for:", contact.username);
       const encryptedPayload = encryptMessage(
-        messageInput,
+        contentToSend,
         contact.publicKey,
         privateKey
       );
-      console.log(
-        "Encrypted payload created, length:",
-        encryptedPayload.length
-      );
 
-      // Send via WebSocket instead of REST API
+      // 3. Send via WebSocket
       const result = await websocket.sendMessage(
         activeConversation,
         contact.cryptoProfileId,
@@ -320,25 +558,21 @@ export const Chat: React.FC = () => {
         "message"
       );
 
-      console.log("Message sent via WebSocket:", result);
+      // console.log("Message sent via WebSocket:", result);
 
-      addMessage(activeConversation, {
-        id: result.messageId || Date.now().toString(),
-        senderId: user?.publicKey || "",
-        senderUsername: user?.username || "",
-        recipientId: contact.publicKey,
-        recipientUsername: activeConversation,
-        encryptedPayload,
-        decryptedContent: messageInput,
-        messageType: "message",
-        delivered: result.deliveredRealtime || false,
-        createdAt: result.sentAt || new Date().toISOString(),
-      });
+      // 4. Update with real ID and success status
+      updateMessageId(tempId, result.messageId || Date.now().toString(), 'sent');
 
-      setMessageInput("");
-      showToast("✓ Message sent", "success");
+      // Update store with delivered status if provided immediately
+      if (result.deliveredRealtime) {
+        updateMessageStatus(result.messageId, true);
+      }
+
     } catch (error: any) {
       console.error("Send message error:", error);
+
+      // Mark as failed in UI
+      updateMessageId(tempId, tempId, 'failed');
 
       let errorMessage = "Failed to send message";
 
@@ -454,6 +688,28 @@ export const Chat: React.FC = () => {
   const handleLogout = async () => {
     await logout();
     navigate("/login");
+  }
+
+
+  const handleRetryMessage = async (msg: any) => {
+    if (msg.status !== 'failed') return;
+
+    // Remove the failed message (or update to sending)
+    // Actually better to delete and re-send to get a fresh ID and position
+    // updateMessageId(msg.id, msg.id, 'sending'); // Optional visual update
+
+    // We already have the logic in handleSendMessage but it relies on state `messageInput`.
+    // We need to call the core sending logic directly.
+    // Let's adapt the logic or just re-populate input? 
+    // Re-populating input is easiest for UX (user can edit correction).
+
+    setMessageInput(msg.decryptedContent || "");
+    // delete ONLY the failed message from store so we don't duplicate
+    // Note: We don't have a delete action in store exposed here... 
+    // Ideally we'd have `removeMessage`. 
+    // For now, let's just let the user re-send and the failed one stays as "history" or we can ignore it.
+    // Better UX: Fill input.
+    showToast("📝 Message content restored to input. Try sending again.", "info");
   };
 
   const activeConv = activeConversation
@@ -469,25 +725,45 @@ export const Chat: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-void-black text-void-text flex flex-col">
-      {/* Header */}
-      <div className="border-b border-void-purple bg-void-dark">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+    <div className="h-screen flex flex-col relative overflow-hidden">
+      {/* Header with glass effect */}
+      <div className="glass-strong border-b border-void-purple/30 sticky top-0 z-10 shadow-2xl">
+        <div className="container mx-auto px-6 py-4 flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold">VoidLink</h1>
-            <div className="flex items-center gap-2 text-sm">
+            <h1 className="text-2xl font-bold text-gradient">VoidLink</h1>
+            <div className="flex items-center gap-2 text-sm glass-light px-3 py-1.5 rounded-full">
               <div
-                className={`w-2 h-2 rounded-full ${
-                  isConnected ? "bg-void-success" : "bg-void-danger"
-                }`}
+                className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${isConnected
+                  ? "bg-void-success shadow-lg shadow-void-success/50 animate-pulse"
+                  : "bg-void-danger"
+                  }`}
               />
-              <span className="text-void-text-dim">
+              <span className="text-void-text-dim font-medium">
                 {isConnected ? "Connected" : "Disconnected"}
               </span>
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-void-text-dim">{user?.username}</span>
+            <select
+              value={user?.presenceStatus || "online"}
+              onChange={(e) => {
+                const status = e.target.value as
+                  | "online"
+                  | "away"
+                  | "busy"
+                  | "offline";
+                useAuthStore.getState().setPresenceStatus(status);
+                websocket.send("presence_update", { status });
+              }}
+              className="px-4 py-2 glass rounded-xl text-sm focus:outline-none focus:border-void-accent/50 focus:ring-2 focus:ring-void-accent/30 cursor-pointer transition-all duration-300 hover:bg-void-purple/20"
+            >
+              <option value="online">🟢 Online</option>
+              <option value="away">🟡 Away</option>
+              <option value="busy">🔴 Busy</option>
+            </select>
+            <span className="text-void-text-dim font-medium">
+              {user?.username}
+            </span>
             <Button variant="secondary" size="sm" onClick={handleLogout}>
               Logout
             </Button>
@@ -496,31 +772,42 @@ export const Chat: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Contacts Sidebar */}
-        <div className="w-80 border-r border-void-purple bg-void-dark flex flex-col">
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Contacts Sidebar with glass */}
+        <div className="w-80 glass border-r border-void-purple/30 flex flex-col shadow-2xl">
           <div className="p-4 border-b border-void-purple">
-            <Button
-              className="w-full"
-              size="sm"
-              onClick={() => setShowAddContact(true)}
-            >
-              + Add Contact
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                className="flex-1"
+                size="sm"
+                onClick={() => setShowAddContact(true)}
+              >
+                + Add Contact
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={loadPendingRequests}
+                title="Refresh pending requests"
+              >
+                ↻
+              </Button>
+            </div>
           </div>
 
           {/* Pending Requests */}
           {pendingRequests.length > 0 && (
-            <div className="border-b border-void-purple">
+            <div className="border-b border-void-purple/30">
               <div className="p-4">
-                <h3 className="text-sm font-semibold text-void-accent mb-3">
+                <h3 className="text-sm font-semibold text-void-accent mb-3 flex items-center gap-2">
+                  <span className="w-2 h-2 bg-void-accent rounded-full animate-pulse"></span>
                   Pending Requests ({pendingRequests.length})
                 </h3>
                 <div className="space-y-2">
                   {pendingRequests.map((req) => (
                     <div
                       key={req.id}
-                      className="p-4 bg-void-black rounded-lg border border-void-purple/50 hover:border-void-purple transition-colors"
+                      className="p-4 glass-light rounded-xl border border-void-purple/30 hover:border-void-purple/50 transition-all duration-300 hover:scale-[1.02]"
                     >
                       <p className="text-sm font-medium mb-2">
                         {req.requesterUsername}
@@ -552,65 +839,137 @@ export const Chat: React.FC = () => {
             </div>
           )}
 
-          {/* Contacts List */}
-          <div className="flex-1 overflow-y-auto">
-            <div className="p-4">
-              <h3 className="text-sm font-semibold text-void-text-dim mb-3">
-                Contacts ({contacts.length})
-              </h3>
-              {contacts.length === 0 ? (
-                <p className="text-sm text-void-text-dim text-center py-8">
-                  No contacts yet. Add someone to start chatting!
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {contacts.map((contact) => (
-                    <button
-                      key={contact.username}
-                      onClick={() => setActiveConversation(contact.username)}
-                      className={`w-full p-4 rounded-lg text-left transition-all ${
-                        activeConversation === contact.username
-                          ? "bg-void-purple shadow-lg"
-                          : "bg-void-black hover:bg-void-purple/50"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 mb-1">
-                        <div
-                          className={`w-2.5 h-2.5 rounded-full ${
-                            contact.isOnline
-                              ? "bg-void-success animate-pulse"
-                              : "bg-gray-500"
-                          }`}
-                        />
-                        <span className="font-medium text-base">
-                          {contact.username}
-                        </span>
-                      </div>
-                      <p className="text-xs text-void-text-dim ml-5">
-                        {contact.isOnline ? "Online" : "Offline"}
-                      </p>
-                    </button>
-                  ))}
+          {/* Unified Conversation List - Telegram Style */}
+          <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-void-purple/20 scrollbar-track-transparent">
+            <div className="px-2 pb-2 mt-2">
+              {/* Search Bar Placeholder (Visual only for now) */}
+              <div className="mb-2 px-1">
+                <div className="bg-white/5 rounded-full px-4 py-1.5 text-sm text-void-text-dim flex items-center gap-2 border border-white/5">
+                  <span>🔍</span> <span className="opacity-50">Search...</span>
                 </div>
-              )}
+              </div>
+
+              {(() => {
+                // 1. Merge Contacts and Active Conversations
+                const uniqueUsers = new Set<string>();
+                contacts.forEach(c => uniqueUsers.add(c.username));
+                Array.from(conversations.keys()).forEach(u => uniqueUsers.add(u));
+
+                // 2. Create display objects
+                const displayList = Array.from(uniqueUsers).map(username => {
+                  const contact = contacts.find(c => c.username === username);
+                  const conversation = conversations.get(username);
+                  const lastMsg = conversation?.lastMessage;
+                  // Fallback for sorting: last message time -> contact added time -> 0
+                  const sortTime = lastMsg?.createdAt
+                    ? new Date(lastMsg.createdAt).getTime()
+                    : (contact?.addedAt ? new Date(contact.addedAt).getTime() : 0);
+
+                  return {
+                    username,
+                    displayName: contact?.alias || contact?.username || username,
+                    lastMessage: lastMsg,
+                    unreadCount: conversation?.unreadCount || 0,
+                    isOnline: contact?.presence?.isOnline || conversation?.isOnline || false,
+                    isTyping: conversation?.isTyping || false,
+                    sortTime
+                  };
+                });
+
+                // 3. Sort by recent activity descending
+                displayList.sort((a, b) => b.sortTime - a.sortTime);
+
+                if (displayList.length === 0) {
+                  return (
+                    <p className="text-sm text-void-text-dim text-center py-8">
+                      No conversations yet.<br />Add a contact to start!
+                    </p>
+                  );
+                }
+
+                return (
+                  <div className="space-y-[2px]">
+                    {displayList.map((chat) => (
+                      <button
+                        key={chat.username}
+                        onClick={() => setActiveConversation(chat.username)}
+                        className={`w-full p-2.5 rounded-lg text-left transition-colors duration-200 group ${activeConversation === chat.username
+                            ? "bg-void-accent text-white"
+                            : "hover:bg-white/5 text-void-text-primary"
+                          }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="relative shrink-0">
+                            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold border border-white/5
+                              ${activeConversation === chat.username
+                                ? "bg-white/20 text-white"
+                                : "bg-gradient-to-br from-void-purple/20 to-void-accent/20 text-void-text-primary"
+                              }`}>
+                              {chat.displayName.charAt(0).toUpperCase()}
+                            </div>
+                            {chat.isOnline && (
+                              <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full border-[3px] border-void-black"></div>
+                            )}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex justify-between items-baseline mb-0.5">
+                              <h4 className={`font-semibold truncate text-[15px] ${activeConversation === chat.username ? "text-white" : "text-void-text-primary"
+                                }`}>
+                                {chat.displayName}
+                              </h4>
+                              {chat.lastMessage && (
+                                <span className={`text-xs whitespace-nowrap ml-2 ${activeConversation === chat.username ? "text-white/70" : "text-void-text-dim"
+                                  }`}>
+                                  {new Date(chat.lastMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="flex justify-between items-center h-5">
+                              <p className={`text-sm truncate pr-2 ${activeConversation === chat.username ? "text-white/80" : "text-void-text-dim"
+                                }`}>
+                                {chat.isTyping ? (
+                                  <span className={activeConversation === chat.username ? "text-white animate-pulse" : "text-void-accent animate-pulse"}>
+                                    typing...
+                                  </span>
+                                ) : (
+                                  chat.lastMessage?.decryptedContent || "Start a conversation"
+                                )}
+                              </p>
+                              {chat.unreadCount > 0 && (
+                                <span className={`min-w-[1.25rem] h-5 px-1.5 rounded-full font-bold text-xs flex items-center justify-center ${activeConversation === chat.username
+                                    ? "bg-white text-void-accent"
+                                    : "bg-void-accent text-white"
+                                  }`}>
+                                  {chat.unreadCount}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>
 
         {/* Chat Area */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col relative">
           {activeConversation ? (
             <>
-              {/* Chat Header */}
-              <div className="p-4 border-b border-void-purple bg-void-dark">
-                <div className="flex items-center gap-2">
+              {/* Chat Header with glass */}
+              <div className="p-4 border-b border-void-purple/30 glass-strong shadow-lg">
+                <div className="flex items-center gap-3">
                   <div
-                    className={`w-3 h-3 rounded-full ${
-                      contacts.find((c) => c.username === activeConversation)
-                        ?.isOnline
-                        ? "bg-void-success"
-                        : "bg-gray-500"
-                    }`}
+                    className={`w-3 h-3 rounded-full ${contacts.find((c) => c.username === activeConversation)
+                      ?.isOnline
+                      ? "bg-void-success shadow-lg shadow-void-success/50 animate-pulse"
+                      : "bg-gray-500"
+                      }`}
                   />
                   <h2 className="text-xl font-semibold">
                     {activeConversation}
@@ -619,49 +978,156 @@ export const Chat: React.FC = () => {
               </div>
 
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div
+                ref={messagesContainerRef}
+                onScroll={handleScroll}
+                className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-hide"
+              >
+                {isLoadingMore && (
+                  <div className="text-center py-2">
+                    <span className="text-xs text-void-text-dim">
+                      Loading more messages...
+                    </span>
+                  </div>
+                )}
                 {!activeConv || activeConv.messages.length === 0 ? (
                   <div className="text-center py-12">
-                    <p className="text-void-text-dim">
-                      No messages yet. Start the conversation!
-                    </p>
+                    <div className="glass-light rounded-2xl p-8 inline-block">
+                      <p className="text-void-text-dim">
+                        No messages yet. Start the conversation!
+                      </p>
+                    </div>
                   </div>
                 ) : (
-                  activeConv.messages.map((msg) => (
-                    <div
-                      key={msg.id}
-                      className={`flex ${
-                        msg.senderUsername === user?.username
-                          ? "justify-end"
-                          : "justify-start"
-                      }`}
-                    >
-                      <div
-                        className={`max-w-md p-4 rounded-2xl shadow-md ${
-                          msg.senderUsername === user?.username
-                            ? "bg-void-accent text-void-black"
-                            : "bg-void-purple text-void-text"
-                        }`}
-                      >
-                        <p className="text-sm leading-relaxed">
-                          {decryptMessageContent(msg)}
-                        </p>
-                        <p className="text-xs opacity-70 mt-2">
-                          {new Date(msg.createdAt).toLocaleTimeString()}
-                        </p>
+                  <>
+                    {activeConv.messages.map((msg, index, messages) => {
+                      const isMe = msg.senderUsername === user?.username;
+                      const prevMsg = messages[index - 1];
+                      const nextMsg = messages[index + 1];
+
+                      // Date Header Logic
+                      const isFirstMessage = index === 0;
+                      const isNewDay =
+                        isFirstMessage ||
+                        new Date(msg.createdAt).toDateString() !==
+                        new Date(prevMsg.createdAt).toDateString();
+
+                      let dateLabel = new Date(msg.createdAt).toLocaleDateString();
+                      const today = new Date().toDateString();
+                      const yesterday = new Date(Date.now() - 86400000).toDateString();
+                      const messageDate = new Date(msg.createdAt).toDateString();
+
+                      if (messageDate === today) dateLabel = "Today";
+                      else if (messageDate === yesterday) dateLabel = "Yesterday";
+
+                      // Grouping Logic
+                      const isFirstInGroup =
+                        isFirstMessage ||
+                        isNewDay ||
+                        msg.senderUsername !== prevMsg.senderUsername;
+
+                      const isLastInGroup =
+                        index === messages.length - 1 ||
+                        messages[index + 1].senderUsername !== msg.senderUsername ||
+                        new Date(messages[index + 1].createdAt).toDateString() !== messageDate;
+
+                      return (
+                        <div key={msg.id} className="flex flex-col animate-fade-in">
+                          {isNewDay && (
+                            <div className="flex justify-center my-4 sticky top-0 z-10">
+                              <span className="bg-void-black/60 backdrop-blur-md text-void-text-dim text-xs px-3 py-1 rounded-full border border-void-purple/20 shadow-sm">
+                                {dateLabel}
+                              </span>
+                            </div>
+                          )}
+
+                          <div
+                            className={`flex ${isMe ? "justify-end" : "justify-start"} ${isFirstInGroup ? "mt-2" : "mt-0.5"
+                              }`}
+                          >
+                            <div
+                              className={`max-w-[75%] md:max-w-md px-4 py-2 shadow-sm relative group ${isMe
+                                ? `bg-void-accent text-white ${isFirstInGroup ? "rounded-tr-2xl rounded-tl-2xl" : "rounded-tr-md rounded-tl-2xl"
+                                } ${isLastInGroup ? "rounded-br-2xl rounded-bl-2xl" : "rounded-br-md rounded-bl-2xl"
+                                }`
+                                : `glass-light ${isFirstInGroup ? "rounded-tl-2xl rounded-tr-2xl" : "rounded-tl-md rounded-tr-2xl"
+                                } ${isLastInGroup ? "rounded-bl-2xl rounded-br-2xl" : "rounded-bl-md rounded-br-2xl"
+                                }`
+                                }`}
+                            >
+                              {!isMe && isFirstInGroup && (
+                                <p className="text-xs font-bold text-void-accent mb-1 opacity-80">
+                                  {msg.senderUsername}
+                                </p>
+                              )}
+                              <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">
+                                {msg.decryptedContent || "[Encrypted]"}
+                              </p>
+                              <div className={`flex items-center justify-end gap-1.5 mt-1 select-none ${isMe ? "text-void-white/70" : "text-void-text-dim/70"}`}>
+                                <span className="text-[10px]">
+                                  {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                                {isMe && (
+                                  <span
+                                    className={`text-[10px] ${msg.status === 'failed' ? 'cursor-pointer hover:scale-110 transition-transform' : ''}`}
+                                    onClick={(e) => {
+                                      if (msg.status === 'failed') {
+                                        e.stopPropagation();
+                                        handleRetryMessage(msg);
+                                      }
+                                    }}
+                                    title={msg.status === 'failed' ? "Click to retry" : ""}
+                                  >
+                                    {msg.status === 'failed' ? "❌" :
+                                      msg.status === 'sending' ? "🕒" :
+                                        msg.read ? "✓✓" : "✓"}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <div ref={messagesEndRef} />
+                  </>
+                )}
+
+                {/* Typing Indicator */}
+                {activeConv?.isTyping && (
+                  <div className="flex justify-start px-4 animate-fade-in">
+                    <div className="glass-light rounded-2xl px-4 py-3 border border-void-purple/30">
+                      <div className="flex items-center gap-2">
+                        <div className="flex gap-1">
+                          <div
+                            className="w-2 h-2 bg-void-accent rounded-full animate-bounce"
+                            style={{ animationDelay: "0ms" }}
+                          ></div>
+                          <div
+                            className="w-2 h-2 bg-void-accent rounded-full animate-bounce"
+                            style={{ animationDelay: "150ms" }}
+                          ></div>
+                          <div
+                            className="w-2 h-2 bg-void-accent rounded-full animate-bounce"
+                            style={{ animationDelay: "300ms" }}
+                          ></div>
+                        </div>
+                        <span className="text-xs text-void-text-dim">
+                          typing...
+                        </span>
                       </div>
                     </div>
-                  ))
+                  </div>
                 )}
               </div>
 
-              {/* Message Input */}
-              <div className="p-6 border-t border-void-purple bg-void-dark">
+              {/* Message Input with glass */}
+              <div className="p-6 border-t border-void-purple/30 glass-strong">
                 <div className="flex gap-3">
                   <input
                     type="text"
                     value={messageInput}
-                    onChange={(e) => setMessageInput(e.target.value)}
+                    onChange={handleMessageInputChange}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && !e.shiftKey) {
                         e.preventDefault();
@@ -669,9 +1135,9 @@ export const Chat: React.FC = () => {
                       }
                     }}
                     placeholder="Type a message..."
-                    className="flex-1 px-4 py-3 bg-void-black border border-void-purple rounded-lg focus:outline-none focus:border-void-accent transition-colors"
+                    className="flex-1 px-5 py-3 glass rounded-xl focus:outline-none focus:border-void-accent/50 focus:ring-2 focus:ring-void-accent/30 transition-all duration-300"
                   />
-                  <Button onClick={handleSendMessage} className="px-6">
+                  <Button onClick={handleSendMessage} className="px-8">
                     Send
                   </Button>
                 </div>
@@ -679,12 +1145,12 @@ export const Chat: React.FC = () => {
             </>
           ) : (
             <div className="flex-1 flex items-center justify-center">
-              <div className="text-center">
+              <div className="text-center glass-light rounded-2xl p-12 animate-fade-in">
                 <p className="text-void-text-dim text-lg mb-2">
                   Select a contact to start chatting
                 </p>
                 <p className="text-void-text-dim text-sm">
-                  Your messages are end-to-end encrypted
+                  Your messages are end-to-end encrypted 🔒
                 </p>
               </div>
             </div>
@@ -692,11 +1158,13 @@ export const Chat: React.FC = () => {
         </div>
       </div>
 
-      {/* Add Contact Modal */}
+      {/* Add Contact Modal with glass */}
       {showAddContact && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-          <div className="card max-w-md w-full mx-4 p-6">
-            <h2 className="text-2xl font-bold mb-4">Add Contact</h2>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 animate-fade-in">
+          <div className="card max-w-md w-full mx-4 p-8 animate-fade-in">
+            <h2 className="text-2xl font-bold mb-6 text-gradient">
+              Add Contact
+            </h2>
             <Input
               label="Username"
               value={searchUsername}
@@ -709,7 +1177,7 @@ export const Chat: React.FC = () => {
               onChange={(e) => setContactMessage(e.target.value)}
               placeholder="Hi! Let's connect..."
             />
-            <div className="flex gap-2 mt-4">
+            <div className="flex gap-3 mt-6">
               <Button onClick={handleAddContact} className="flex-1">
                 Send Request
               </Button>

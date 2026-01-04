@@ -47,6 +47,15 @@ export class WebSocketService {
       this.ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
+
+          // Handle auth errors
+          if (data.type === "error" && data.code === "UNAUTHORIZED") {
+            console.log("WebSocket auth error - emitting unauthorized event");
+            window.dispatchEvent(new CustomEvent("unauthorized"));
+            this.disconnect();
+            return;
+          }
+
           this.handleMessage(data);
         } catch (error) {
           console.error("Failed to parse WebSocket message:", error);
@@ -59,9 +68,17 @@ export class WebSocketService {
         reject(error);
       };
 
-      this.ws.onclose = () => {
-        console.log("WebSocket disconnected");
+      this.ws.onclose = (event) => {
+        console.log("WebSocket disconnected", event.code, event.reason);
         this.isConnecting = false;
+
+        // Don't reconnect if it's an auth error (code 1008 or 4001)
+        if (event.code === 1008 || event.code === 4001) {
+          console.log("Auth error on close - emitting unauthorized event");
+          window.dispatchEvent(new CustomEvent("unauthorized"));
+          return;
+        }
+
         this.attemptReconnect();
       };
     });
@@ -132,7 +149,9 @@ export class WebSocketService {
 
       // Set up one-time listeners for response
       const successHandler = (data: any) => {
-        if (data.action === "message_sent") {
+        // We must verify this confirmation matches OUR message
+        // The backend returns { messageId, recipientUsername, ... }
+        if (data.action === "message_sent" && data.data?.recipientUsername === recipientUsername) {
           this.off("success", successHandler);
           this.off("error", errorHandler);
           resolve(data.data);
@@ -158,8 +177,14 @@ export class WebSocketService {
 
       // Timeout after 10 seconds
       setTimeout(() => {
+        // Only remove if still attached (though .off is safe)
         this.off("success", successHandler);
         this.off("error", errorHandler);
+        // Note: We don't verify correlation ID because the current backend response DOES NOT include one that we sent.
+        // It returns a NEW messageId found in the DB.
+        // Checking recipientUsername reduces the race window significantly but doesn't strictly eliminate it if we send 2 messages to same user instantly.
+        // Ideally we would send a client-side ID and get it back.
+        // For now, this is an improvement.
         reject(new Error("Message send timeout"));
       }, 10000);
     });

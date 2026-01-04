@@ -53,8 +53,8 @@ export const Login: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-void-black flex items-center justify-center px-4">
-        <div className="card max-w-md w-full p-8 text-center">
+      <div className="min-h-screen flex items-center justify-center px-4 relative">
+        <div className="card max-w-md w-full p-8 text-center animate-fade-in">
           <Loading size="lg" text="Logging in..." />
           <div className="mt-6 space-y-2 text-sm text-void-text-dim">
             <p>🔑 Fetching your encrypted keys...</p>
@@ -67,9 +67,9 @@ export const Login: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-void-black flex items-center justify-center px-4 animate-fade-in">
-      <div className="card max-w-md w-full p-8">
-        <h1 className="text-3xl font-bold text-center mb-2 text-void-text">
+    <div className="min-h-screen flex items-center justify-center px-4 animate-fade-in relative">
+      <div className="card max-w-md w-full p-8 animate-fade-in">
+        <h1 className="text-3xl font-bold text-center mb-2 text-gradient">
           Welcome Back
         </h1>
         <p className="text-center text-void-text-dim mb-6">
@@ -79,6 +79,8 @@ export const Login: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
             label="Username"
+            name="username"
+            data-testid="username-input"
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
@@ -88,6 +90,8 @@ export const Login: React.FC = () => {
 
           <Input
             label="Password"
+            name="password"
+            data-testid="password-input"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -95,9 +99,11 @@ export const Login: React.FC = () => {
             disabled={isLoading}
           />
 
-          <div className="border-t border-void-purple pt-4">
+          <div className="border-t border-void-purple/30 pt-4">
             <Input
               label="Encryption Passphrase"
+              name="passphrase"
+              data-testid="passphrase-input"
               type="password"
               value={passphrase}
               onChange={(e) => setPassphrase(e.target.value)}
@@ -114,7 +120,7 @@ export const Login: React.FC = () => {
           </Button>
         </form>
 
-        <div className="mt-6 p-4 bg-void-purple/20 rounded-lg border border-void-purple">
+        <div className="mt-6 p-4 glass-light rounded-xl border border-void-purple/30">
           <p className="text-sm text-void-text-dim text-center">
             <span className="text-void-accent">🔐</span> Your keys are encrypted
             with your passphrase. Login works from any device.
@@ -125,7 +131,7 @@ export const Login: React.FC = () => {
           Don't have an account?{" "}
           <button
             onClick={() => navigate("/register")}
-            className="text-void-accent hover:underline"
+            className="text-void-accent hover:underline transition-all"
             disabled={isLoading}
           >
             Register
