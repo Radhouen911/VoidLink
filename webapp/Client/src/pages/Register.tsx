@@ -53,8 +53,8 @@ export const Register: React.FC = () => {
     setIsLoading(true);
     try {
       await authService.register(username, password, passphrase);
-      showToast("✓ Account created successfully!", "success");
-      showToast("✓ Keys generated and encrypted!", "success");
+      showToast("Account created successfully!", "success");
+      showToast("Keys generated and encrypted!", "success");
       setTimeout(() => navigate("/chat"), 1500);
     } catch (error: any) {
       console.error("Registration error:", error);
@@ -66,13 +66,13 @@ export const Register: React.FC = () => {
         error.message?.includes("Username already exists") ||
         error.message?.includes("USERNAME_EXISTS")
       ) {
-        errorMessage = "✗ Username already taken. Please choose another.";
+        errorMessage = "Username already taken. Please choose another.";
       } else if (error.message?.includes("Username must be")) {
-        errorMessage = "✗ Username must be between 3 and 50 characters.";
+        errorMessage = "Username must be between 3 and 50 characters.";
       } else if (error.message?.includes("Password must be")) {
-        errorMessage = "✗ Password must be at least 8 characters.";
+        errorMessage = "Password must be at least 8 characters.";
       } else if (error.message) {
-        errorMessage = "✗ " + error.message;
+        errorMessage = error.message;
       }
 
       showToast(errorMessage, "error");

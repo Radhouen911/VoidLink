@@ -209,9 +209,10 @@ class ApiService {
     });
   }
 
-  async getConversation(username: string, since?: string, limit = 50) {
+  async getConversation(username: string, since?: string, before?: string, limit = 50) {
     const params = new URLSearchParams({ limit: limit.toString() });
     if (since) params.append("since", since);
+    if (before) params.append("before", before);
 
     return this.request(`/api/messages/conversation/${username}?${params}`, {
       method: "GET",

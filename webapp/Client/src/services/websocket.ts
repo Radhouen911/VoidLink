@@ -90,6 +90,16 @@ export class WebSocketService {
       return;
     }
 
+    // Check if we still have valid tokens before attempting reconnect
+    const accountToken = SecureStorage.getAccountToken();
+    const cryptoToken = SecureStorage.getCryptoToken();
+
+    if (!accountToken || !cryptoToken) {
+      console.log("No valid tokens available - stopping reconnection attempts");
+      window.dispatchEvent(new CustomEvent("unauthorized"));
+      return;
+    }
+
     this.reconnectAttempts++;
     const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
 
@@ -151,7 +161,10 @@ export class WebSocketService {
       const successHandler = (data: any) => {
         // We must verify this confirmation matches OUR message
         // The backend returns { messageId, recipientUsername, ... }
-        if (data.action === "message_sent" && data.data?.recipientUsername === recipientUsername) {
+        if (
+          data.action === "message_sent" &&
+          data.data?.recipientUsername === recipientUsername
+        ) {
           this.off("success", successHandler);
           this.off("error", errorHandler);
           resolve(data.data);

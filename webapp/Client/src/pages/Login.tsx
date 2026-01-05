@@ -19,7 +19,7 @@ export const Login: React.FC = () => {
     e.preventDefault();
 
     if (!username || !password || !passphrase) {
-      showToast("✗ Please fill in all fields", "error");
+      showToast("Please fill in all fields", "error");
       return;
     }
 
@@ -27,7 +27,7 @@ export const Login: React.FC = () => {
     try {
       showToast("Authenticating...", "info");
       await authService.login(username, password, passphrase);
-      showToast("✓ Login successful!", "success");
+      showToast("Login successful!", "success");
       showToast("Redirecting to chat...", "info");
       setTimeout(() => navigate("/chat"), 2000);
     } catch (error: any) {
@@ -36,13 +36,13 @@ export const Login: React.FC = () => {
       let errorMessage = "Login failed. Please check your credentials.";
 
       if (error.message.includes("Incorrect passphrase")) {
-        errorMessage = "✗ Incorrect passphrase. Please try again.";
+        errorMessage = "Incorrect passphrase. Please try again.";
       } else if (error.message.includes("No backup found")) {
-        errorMessage = "✗ No backup found. You may need to register first.";
+        errorMessage = "No backup found. You may need to register first.";
       } else if (error.message.includes("Invalid username or password")) {
-        errorMessage = "✗ Invalid username or password.";
+        errorMessage = "Invalid username or password.";
       } else if (error.message) {
-        errorMessage = "✗ " + error.message;
+        errorMessage = error.message;
       }
 
       showToast(errorMessage, "error");

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { SecureStorage } from "../crypto/storage";
+import { api } from "../services/api";
 import { websocket } from "../services/websocket";
 import { useChatStore } from "../store/chatStore";
 import { useContactStore } from "../store/contactStore";
@@ -16,6 +17,9 @@ export const useWebSocket = () => {
   const updateContactStatus = useContactStore(
     (state) => state.updateContactStatus
   );
+
+  // Track typing timeouts to prevent race conditions
+  const typingTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     // Connect to WebSocket
@@ -37,48 +41,40 @@ export const useWebSocket = () => {
 
       // We need to get the sender's public key from contacts
       const { contacts } = useContactStore.getState();
-      const senderContact = contacts.find((c) => c.username === senderUsername);
+      let senderContact = contacts.find((c) => c.username === senderUsername);
 
       if (!senderContact) {
-        console.warn("Sender not in contacts:", senderUsername, "- attempting to fetch info");
+        console.warn(
+          "Sender not in contacts:",
+          senderUsername,
+          "- attempting to fetch info"
+        );
 
         try {
-          // Try to create a temporary contact object if we have the public key
-          // Sender's public key is passed as senderCryptoProfileId (which seems to be the KEY from backend message format)
-          // Wait, backend 'senderCryptoProfileId' is the ID, not the key. 
-          // BUT, 'senderPublicKey' variable usage in original code suggests confusion.
-          // Original: const senderPublicKey = data.senderCryptoProfileId; 
-          // Backend sends: senderCryptoProfileId (UUID)
-          // We need to fetch the user to get the public key.
+          // Fetch user info to get public key
+          const response: any = await api.getUserByUsername(senderUsername);
+          const userData = response.data;
 
-          // NOTE: The `api.getUserByUsername` endpoint returns the public key.
-          // We can assume this user MIGHT correspond to a pending request or just a stranger if the backend allowed it.
-
-          // However, if we don't have them in contacts, we likely can't decrypt their message easily if we don't have their public key stored.
-          // But let's try to fetch it.
-
-          // Note: This relies on `api` import which is not in the hook.
-          // Since we can't easily import `api` inside the hook without potentially circular deps or refactoring,
-          // we will just log a clearer error for now, OR better, check Pending Requests.
-
-          const { pendingRequests } = useContactStore.getState();
-          const pendingSender = pendingRequests.find(r => r.requesterUsername === senderUsername);
-
-          if (pendingSender) {
-            console.log("Message is from a pending contact request sender.");
-            // We could theoretically display it, but usually we wait for accept.
-            // Just logging is better than silent failure.
+          if (userData && userData.publicKey) {
+            senderContact = {
+              username: senderUsername,
+              publicKey: userData.publicKey,
+              cryptoProfileId: senderPublicKey, // ID from message
+              contactStatus: "unknown", // not in contacts yet
+              isOnline: false,
+              addedAt: new Date().toISOString(),
+            };
+          } else {
+            console.error(
+              `Could not fetch public key for ${senderUsername}. Dropping message.`
+            );
+            return;
           }
-
-          // If we really want to fix "Silent Drop", we should at least notify the user
-          console.error(`Received message from unknown contact ${senderUsername}. Dropping message.`);
-          return;
         } catch (e) {
           console.error("Error handling unknown contact message", e);
           return;
         }
       }
-
 
       // Removed duplicate declarations
       const myPublicKey = SecureStorage.getPublicKey();
@@ -102,7 +98,14 @@ export const useWebSocket = () => {
               );
               if (decrypted) {
                 decryptedContent = decrypted;
+              } else {
+                console.warn(
+                  "Decryption returned null for message:",
+                  data.messageId
+                );
               }
+            } else {
+              console.warn("No private key available for decryption");
             }
           } catch (decError) {
             console.error("Immediate decryption failed:", decError);
@@ -120,7 +123,6 @@ export const useWebSocket = () => {
             delivered: false,
             createdAt: data.sentAt || new Date().toISOString(),
           });
-          console.log("Message added to store from:", senderUsername);
 
           // ALWAYS send delivery confirmation
           websocket.send("message_delivered", { messageId: data.messageId });
@@ -128,10 +130,8 @@ export const useWebSocket = () => {
           // IF this is the active conversation, send READ confirmation immediately
           const { activeConversation } = useChatStore.getState();
           if (activeConversation === senderUsername) {
-            console.log("Active conversation match - sending read receipt");
             websocket.send("message_read", { messageId: data.messageId });
           }
-
         } catch (error) {
           console.error("Failed to handle message:", error);
         }
@@ -159,18 +159,78 @@ export const useWebSocket = () => {
     };
 
     // Handle contact request received
-    const handleContactRequestReceived = (data: any) => {
+    const handleContactRequestReceived = async (data: any) => {
       console.log("Contact request received:", data);
-      const { contacts } = useContactStore.getState();
-      // Reload pending requests
-      // This will be handled by Chat component
+
+      try {
+        // Reload pending requests from backend
+        const response: any = await api.getPendingRequests();
+        const requests = response.data?.pendingRequests || [];
+
+        // Map backend format to frontend format
+        const mappedRequests = requests.map((req: any) => ({
+          id: req.requestId,
+          requesterUsername: req.requesterUsername,
+          requesterPublicKey: req.requesterPublicKey || "",
+          message: req.message,
+          createdAt: req.receivedAt,
+        }));
+
+        // Update store
+        useContactStore.getState().setPendingRequests(mappedRequests);
+
+        console.log(
+          `Loaded ${mappedRequests.length} pending requests via WebSocket`
+        );
+      } catch (error) {
+        console.error("Failed to reload pending requests:", error);
+      }
     };
 
     // Handle contact accepted
-    const handleContactAccepted = (data: any) => {
+    const handleContactAccepted = async (data: any) => {
       console.log("Contact accepted:", data);
-      // Reload contacts list
-      // This will be handled by Chat component
+      const { username } = data; // Backend sends username of new contact
+
+      try {
+        // Reload contacts list from backend
+        const response: any = await api.getContacts();
+        const contactsData = response.data?.contacts || [];
+
+        // Map backend format to frontend format
+        const mappedContacts = contactsData.map((contact: any) => ({
+          username: contact.username,
+          publicKey: contact.publicKey || contact.public_key || "",
+          cryptoProfileId:
+            contact.contactCryptoId || contact.contact_crypto_id || "",
+          contactStatus:
+            contact.status ||
+            contact.contactStatus ||
+            contact.contact_status ||
+            "accepted",
+          isOnline:
+            contact.presence?.isOnline ||
+            contact.isOnline ||
+            contact.is_online ||
+            false,
+          addedAt: contact.addedAt || contact.added_at,
+          acceptedAt: contact.acceptedAt || contact.accepted_at,
+        }));
+
+        // Update store
+        useContactStore.getState().setContacts(mappedContacts);
+
+        console.log(`Loaded ${mappedContacts.length} contacts via WebSocket`);
+
+        // If we have a username, auto-open chat with new contact
+        if (username) {
+          const { setActiveConversation } = useChatStore.getState();
+          setActiveConversation(username);
+          console.log(`Auto-opened chat with new contact: ${username}`);
+        }
+      } catch (error) {
+        console.error("Failed to reload contacts:", error);
+      }
     };
 
     // Handle presence updates
@@ -196,20 +256,21 @@ export const useWebSocket = () => {
     const handleTypingStart = (data: any) => {
       // Backend sends: { type: "typing_start", senderUsername, senderCryptoProfileId, timestamp }
       const { senderUsername } = data;
-      // console.log(`${senderUsername} started typing`);
       setUserTyping(senderUsername, true);
 
+      // Clear existing timeout for this user to prevent race conditions
+      const existingTimeout = typingTimeouts.get(senderUsername);
+      if (existingTimeout) {
+        clearTimeout(existingTimeout);
+      }
+
       // SAFETY TIMEOUT: Auto-clear typing status after 5 seconds to prevent "ghost typing"
-      // If the user keeps typing, they will send another typing_start which re-sets the state to true
-      // But we need to make sure we don't clear it prematurely if a new start event came in.
-      // Ideally we'd use a ref to track timeouts, but a simple delayed "set false" is often "good enough" 
-      // because if they are still typing, a new "start" event usually arrives every ~3s.
-      // A better approach is trusting the store logic or just letting the UI handle it? 
-      // Actually, the UI usually handles the visual timeout. 
-      // But let's enforce it here to be safe and clean up state.
-      setTimeout(() => {
+      const timeout = setTimeout(() => {
         setUserTyping(senderUsername, false);
+        typingTimeouts.delete(senderUsername);
       }, 5000);
+
+      typingTimeouts.set(senderUsername, timeout);
     };
 
     const handleTypingStop = (data: any) => {
@@ -217,6 +278,13 @@ export const useWebSocket = () => {
       const { senderUsername } = data;
       console.log(`${senderUsername} stopped typing`);
       setUserTyping(senderUsername, false);
+
+      // Clear any pending timeout for this user
+      const existingTimeout = typingTimeouts.get(senderUsername);
+      if (existingTimeout) {
+        clearTimeout(existingTimeout);
+        typingTimeouts.delete(senderUsername);
+      }
     };
 
     // Register handlers
@@ -241,6 +309,11 @@ export const useWebSocket = () => {
     // Cleanup on unmount
     return () => {
       clearInterval(pingInterval);
+
+      // Clear all typing timeouts
+      typingTimeouts.forEach((timeout) => clearTimeout(timeout));
+      typingTimeouts.clear();
+
       websocket.off("message_received", handleNewMessage);
       // websocket.off("new_message", handleNewMessage);
       websocket.off("message_delivered", handleMessageDelivered);

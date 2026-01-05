@@ -3,16 +3,18 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "../components/common/Button";
 import { Input } from "../components/common/Input";
 import { Loading } from "../components/common/Loading";
+import { PassphrasePrompt } from "../components/common/PassphrasePrompt";
 import { useToast } from "../components/common/Toast";
-import { decryptMessage, encryptMessage } from "../crypto/encryption";
+import { encryptMessage } from "../crypto/encryption";
 import { SecureStorage } from "../crypto/storage";
 import { useAuth } from "../hooks/useAuth";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { api } from "../services/api";
-import { getSessionPrivateKey } from "../services/auth";
+import { authService, getSessionPrivateKey } from "../services/auth";
+import { decryptMessageForDisplay } from "../services/messageDecryption";
 import { websocket } from "../services/websocket";
 import { useAuthStore } from "../store/authStore";
-import { useChatStore } from "../store/chatStore";
+import { Message, useChatStore } from "../store/chatStore";
 import { useContactStore } from "../store/contactStore";
 
 export const Chat: React.FC = () => {
@@ -30,7 +32,7 @@ export const Chat: React.FC = () => {
     addMessage,
     addMessages,
     updateMessageId,
-    updateMessageStatus
+    updateMessageStatus,
   } = useChatStore();
 
   const [messageInput, setMessageInput] = useState("");
@@ -44,12 +46,16 @@ export const Chat: React.FC = () => {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
   const [userAutoScrolled, setUserAutoScrolled] = useState(true); // Track if user is at bottom
+  const [showPassphrasePrompt, setShowPassphrasePrompt] = useState(false);
+  const [isContactsLoading, setIsContactsLoading] = useState(false);
 
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
   const messagesContainerRef = React.useRef<HTMLDivElement>(null);
 
   const scrollToBottom = (smooth = true) => {
-    messagesEndRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "auto" });
+    messagesEndRef.current?.scrollIntoView({
+      behavior: smooth ? "smooth" : "auto",
+    });
   };
 
   // Scroll to bottom when switching conversations
@@ -60,6 +66,17 @@ export const Chat: React.FC = () => {
       scrollToBottom(false); // Instant scroll on switch
       loadConversationHistory(activeConversation);
     }
+
+    // Cleanup: Stop typing indicator when leaving conversation
+    return () => {
+      if (activeConversation && typingTimeout) {
+        clearTimeout(typingTimeout);
+        setTypingTimeout(null);
+        websocket.send("typing_stop", {
+          recipientUsername: activeConversation,
+        });
+      }
+    };
   }, [activeConversation]);
 
   // Handle auto-scroll on new messages
@@ -70,7 +87,10 @@ export const Chat: React.FC = () => {
     if (!conversation) return;
 
     // Only scroll if we were already at bottom or if it's our own message
-    if (userAutoScrolled || conversation.lastMessage?.senderUsername === user?.username) {
+    if (
+      userAutoScrolled ||
+      conversation.lastMessage?.senderUsername === user?.username
+    ) {
       scrollToBottom();
     }
   }, [conversations, activeConversation, userAutoScrolled, user?.username]);
@@ -78,10 +98,12 @@ export const Chat: React.FC = () => {
   // Track scroll position to determine if user is at bottom
   const handleScrollEvents = (e: React.UIEvent<HTMLDivElement>) => {
     const target = e.currentTarget;
-    const isAtBottom = Math.abs(target.scrollHeight - target.scrollTop - target.clientHeight) < 50;
+    const isAtBottom =
+      Math.abs(target.scrollHeight - target.scrollTop - target.clientHeight) <
+      50;
     setUserAutoScrolled(isAtBottom);
     handleScroll(e);
-  }
+  };
 
   // Infinite scroll handler
   const handleScroll = async (e: React.UIEvent<HTMLDivElement>) => {
@@ -106,7 +128,8 @@ export const Chat: React.FC = () => {
       try {
         const response: any = await api.getConversation(
           activeConversation,
-          oldestTimestamp,
+          undefined, // since
+          oldestTimestamp, // before
           30 // Load 30 more messages
         );
         const messagesData = response.data?.conversation || [];
@@ -119,43 +142,47 @@ export const Chat: React.FC = () => {
         const contact = contacts.find((c) => c.username === activeConversation);
         if (!contact) return;
 
+        // CRITICAL: Verify contact has valid publicKey before processing messages
+        if (!contact.publicKey) {
+          console.error(
+            `Contact ${activeConversation} has no publicKey, cannot decrypt messages`
+          );
+          return;
+        }
+
         const privateKey = getSessionPrivateKey();
 
         const mappedMessages = messagesData.map((msg: any) => {
           const isSent = msg.direction === "sent";
+          // Now safe: contact.publicKey is guaranteed to exist
+          const senderId = isSent ? user?.publicKey || "" : contact.publicKey;
+          const recipientId = isSent
+            ? contact.publicKey
+            : user?.publicKey || "";
 
-          let decryptedContent = "[Encrypted]";
-
-          // Decrypt if we have keys
-          if (privateKey) {
-            const otherPartyKey = isSent ? msg.recipientId : msg.senderId;
-            const keyToUse = otherPartyKey || contact.publicKey;
-
-            if (keyToUse) {
-              try {
-                const decrypted = decryptMessage(msg.encryptedPayload, keyToUse, privateKey);
-                if (decrypted) decryptedContent = decrypted;
-              } catch (e) {
-                // console.error("History decryption failed", e);
-              }
-            }
-          }
+          // Use centralized decryption
+          const decryptionResult = decryptMessageForDisplay(
+            msg.encryptedPayload,
+            senderId,
+            recipientId,
+            user?.publicKey || ""
+          );
 
           return {
             id: msg.messageId,
-            senderId: isSent ? user?.publicKey || "" : contact.publicKey,
+            senderId,
             senderUsername: isSent ? user?.username || "" : activeConversation,
-            recipientId: isSent ? contact.publicKey : user?.publicKey || "",
+            recipientId,
             recipientUsername: isSent
               ? activeConversation
               : user?.username || "",
             encryptedPayload: msg.encryptedPayload,
-            decryptedContent: decryptedContent,
+            decryptedContent: decryptionResult.content,
             messageType: msg.messageType || "message",
             delivered: msg.delivered || false,
             read: msg.read || false,
             createdAt: msg.createdAt,
-            status: 'sent' // Historical messages are sent
+            status: "sent", // Historical messages are sent
           };
         });
 
@@ -176,11 +203,11 @@ export const Chat: React.FC = () => {
     }
   };
 
-
   useEffect(() => {
     const initializeChat = async () => {
       try {
         await loadContacts();
+        await loadInbox(); // Restore Inbox loading!
         await loadPendingRequests();
       } catch (error) {
         console.error("Failed to initialize chat:", error);
@@ -190,47 +217,64 @@ export const Chat: React.FC = () => {
     };
 
     initializeChat();
-    initializeChat();
   }, []);
+
+  // Detect if passphrase is needed for decryption
+  useEffect(() => {
+    if (
+      !activeConversation ||
+      !conversations.get(activeConversation)?.messages
+    ) {
+      return;
+    }
+
+    const conversation = conversations.get(activeConversation);
+    const hasSessionExpiredMessages = conversation?.messages.some(
+      (m) => m.decryptedContent === "[Session expired - login to decrypt]"
+    );
+
+    // If we have session expired messages and private key is missing, show prompt
+    if (hasSessionExpiredMessages && !getSessionPrivateKey()) {
+      setShowPassphrasePrompt(true);
+    }
+  }, [activeConversation, conversations]);
 
   // Reactive Decryption: Retry decrypting messages if they are still encrypted and contacts/keys become available
   useEffect(() => {
-    if (!activeConversation || !conversations.get(activeConversation)?.messages) return;
+    if (!activeConversation || !conversations.get(activeConversation)?.messages)
+      return;
 
     const conversation = conversations.get(activeConversation);
-    const needsDecryption = conversation?.messages.some(m => !m.decryptedContent || m.decryptedContent === "[Encrypted]");
+    const needsDecryption = conversation?.messages.some(
+      (m) => !m.decryptedContent || m.decryptedContent === "[Encrypted]"
+    );
 
-    if (needsDecryption) {
-      // console.log("Retrying decryption for active conversation...");
-      const contact = contacts.find(c => c.username === activeConversation);
-      const privateKey = getSessionPrivateKey();
-
-      if (contact && privateKey) {
-        const updatedMessages = conversation!.messages.map(msg => {
-          if (msg.decryptedContent && msg.decryptedContent !== "[Encrypted]") return msg;
-
-          const isSent = msg.senderUsername === user?.username;
-          const otherPartyKey = isSent ? msg.recipientId : msg.senderId;
-          const keyToUse = otherPartyKey || contact.publicKey;
-
-          if (keyToUse) {
-            try {
-              const decrypted = decryptMessage(msg.encryptedPayload, keyToUse, privateKey);
-              if (decrypted) {
-                return { ...msg, decryptedContent: decrypted };
-              }
-            } catch (e) {
-              // still failing
-            }
-          }
+    if (needsDecryption && user?.publicKey) {
+      const updatedMessages = conversation!.messages.map((msg) => {
+        if (msg.decryptedContent && msg.decryptedContent !== "[Encrypted]")
           return msg;
-        });
 
-        // Only update if changed
-        addMessages(activeConversation, updatedMessages); // addMessages handles upsert/sort
-      }
+        // Use centralized decryption
+        const decryptionResult = decryptMessageForDisplay(
+          msg.encryptedPayload,
+          msg.senderId,
+          msg.recipientId,
+          user.publicKey
+        );
+
+        return { ...msg, decryptedContent: decryptionResult.content };
+      });
+
+      // Only update if changed
+      addMessages(activeConversation, updatedMessages);
     }
-  }, [contacts, activeConversation, conversations, user?.username]);
+  }, [
+    contacts,
+    activeConversation,
+    conversations,
+    user?.username,
+    user?.publicKey,
+  ]);
 
   // Load conversation history when a contact is selected (one-time load)
   // MOVED logic to the new useEffect above dependent on activeConversation
@@ -238,7 +282,12 @@ export const Chat: React.FC = () => {
   const loadConversationHistory = async (username: string) => {
     try {
       console.log(`Loading conversation history for ${username}...`);
-      const response: any = await api.getConversation(username, undefined, 30); // Load only 30 most recent
+      const response: any = await api.getConversation(
+        username,
+        undefined,
+        undefined,
+        30
+      ); // Load only 30 most recent
       const messagesData = response.data?.conversation || [];
 
       console.log(`Received ${messagesData.length} messages for ${username}`);
@@ -248,46 +297,51 @@ export const Chat: React.FC = () => {
         const contact = contacts.find((c) => c.username === username);
         const privateKey = getSessionPrivateKey();
 
-        // If contact missing, just log warning but proceed (messages will be encrypted)
+        // CRITICAL: If contact missing or has no publicKey, cannot decrypt
         if (!contact) {
-          console.warn(`Contact ${username} not found in store, messages will remain encrypted`);
+          console.error(
+            `Contact ${username} not found in store, cannot load conversation`
+          );
+          return;
+        }
+
+        if (!contact.publicKey) {
+          console.error(
+            `Contact ${username} has no publicKey, cannot decrypt messages`
+          );
+          return;
         }
 
         // Map backend format to frontend format AND DECRYPT IMMEDIATELY
         const mappedMessages = messagesData.map((msg: any) => {
           const isSent = msg.direction === "sent";
+          // Now safe: contact.publicKey is guaranteed to exist
+          const senderId = isSent ? user?.publicKey || "" : contact.publicKey;
+          const recipientId = isSent
+            ? contact.publicKey
+            : user?.publicKey || "";
 
-          let decryptedContent = "[Encrypted]";
-
-          // Decrypt if we have keys and contact
-          if (privateKey && contact) {
-            const otherPartyKey = isSent ? msg.recipientId : msg.senderId;
-            // Fallback to contact key if missing in msg (common in older msgs)
-            const keyToUse = otherPartyKey || contact.publicKey;
-
-            if (keyToUse) {
-              try {
-                const decrypted = decryptMessage(msg.encryptedPayload, keyToUse, privateKey);
-                if (decrypted) decryptedContent = decrypted;
-              } catch (e) {
-                // console.error("History decryption failed", e);
-              }
-            }
-          }
+          // Use centralized decryption
+          const decryptionResult = decryptMessageForDisplay(
+            msg.encryptedPayload,
+            senderId,
+            recipientId,
+            user?.publicKey || ""
+          );
 
           return {
             id: msg.messageId,
-            senderId: isSent ? user?.publicKey || "" : (contact?.publicKey || ""),
+            senderId,
             senderUsername: isSent ? user?.username || "" : username,
-            recipientId: isSent ? (contact?.publicKey || "") : user?.publicKey || "",
+            recipientId,
             recipientUsername: isSent ? username : user?.username || "",
             encryptedPayload: msg.encryptedPayload,
-            decryptedContent: decryptedContent,
+            decryptedContent: decryptionResult.content,
             messageType: msg.messageType || "message",
             delivered: msg.delivered || false,
             read: msg.read || false,
             createdAt: msg.createdAt,
-            status: 'sent' // Historical are sent
+            status: "sent", // Historical are sent
           };
         });
 
@@ -313,68 +367,103 @@ export const Chat: React.FC = () => {
     }
   };
 
-  // Decrypt a message for display
-  const decryptMessageContent = (msg: any): string => {
-    // If we sent it and have decrypted content (optimistic), return it
-    if (msg.decryptedContent && msg.decryptedContent !== "[Encrypted]") {
-      return msg.decryptedContent;
-    }
-
-    // Get private key from session
-    const privateKey = getSessionPrivateKey();
-    if (!privateKey) {
-      return "[Session expired - login to decrypt]";
-    }
-
-    // Get the other party's public key
-    const contact = contacts.find(
-      (c) =>
-        c.username === msg.senderUsername ||
-        c.username === msg.recipientUsername
-    );
-
-    if (!contact) {
-      console.error("Contact not found for message:", {
-        senderUsername: msg.senderUsername,
-        recipientUsername: msg.recipientUsername,
-        availableContacts: contacts.map((c) => c.username),
-      });
-      return "[Contact not found]";
-    }
-
-    // Determine if we're the sender or recipient
-    const isSender = msg.senderUsername === user?.username;
-    const otherPartyPublicKey = isSender ? msg.recipientId : msg.senderId;
-
-    if (!otherPartyPublicKey) {
-      console.error("Missing encryption key for message:", {
-        isSender,
-        senderId: msg.senderId,
-        recipientId: msg.recipientId,
-      });
-      return "[Missing encryption key]";
-    }
-
-    // console.log("Attempting to decrypt message:", { ... }); // Reduced logging
-
+  const loadInbox = async () => {
     try {
-      const decrypted = decryptMessage(
-        msg.encryptedPayload,
-        otherPartyPublicKey,
-        privateKey
-      );
-      // console.log("Message decrypted successfully:", msg.id);
-      return decrypted || "[Decryption failed]";
-    } catch (error) {
-      console.error("Decryption error:", {
-        messageId: msg.id,
-        error: error,
+      console.log("Loading inbox...");
+      // Fetch latest 100 messages from inbox
+      const response: any = await api.getInbox(100);
+      const messagesData = response.data?.messages || [];
+      console.log(`Loaded ${messagesData.length} inbox messages`);
+
+      if (messagesData.length === 0) return;
+
+      const privateKey = getSessionPrivateKey();
+
+      // Group by sender/conversation
+      const messagesByConversation = new Map<string, any[]>();
+
+      messagesData.forEach((msg: any) => {
+        // For inbox, sender is the other party (unless we sent it, but inbox usually implies incoming)
+        // Actually, let's verify logic: Inbox contains all recent messages? Or just unread?
+        // Standard inbox fetch usually gets recent threads.
+        // Let's assume `senderUsername` is the conversation partner for incoming.
+        // But what if I sent the last message?
+        // The API returns `sender_username`.
+
+        // If I am the sender, the conversation is with recipient.
+        // But getInbox API (as seen in routes/messages.js) filters by `recipient_crypto_id = $1`.
+        // So these are ONLY received messages.
+        // So `senderUsername` IS the conversation partner.
+
+        const partner = msg.senderUsername;
+        if (!messagesByConversation.has(partner)) {
+          messagesByConversation.set(partner, []);
+        }
+        messagesByConversation.get(partner)?.push(msg);
       });
-      return "[Decryption failed]";
+
+      // Process each conversation
+      for (const [partner, msgs] of messagesByConversation) {
+        // CRITICAL: Skip conversations where contact is not found or has no publicKey
+        const contact = contacts.find((c) => c.username === partner);
+
+        if (!contact) {
+          console.warn(
+            `Inbox: Contact ${partner} not found, skipping ${msgs.length} messages`
+          );
+          continue; // Skip this conversation
+        }
+
+        if (!contact.publicKey) {
+          console.warn(
+            `Inbox: Contact ${partner} has no publicKey, skipping ${msgs.length} messages`
+          );
+          continue; // Skip this conversation
+        }
+
+        // Now safe: contact.publicKey is guaranteed to exist
+        const mappedMessages = msgs.map((msg: any) => {
+          const senderId = contact.publicKey; // Guaranteed non-empty
+          const recipientId = user?.publicKey || "";
+
+          // Use centralized decryption
+          const decryptionResult = decryptMessageForDisplay(
+            msg.encryptedPayload,
+            senderId,
+            recipientId,
+            user?.publicKey || ""
+          );
+
+          return {
+            id: msg.messageId,
+            senderId,
+            senderUsername: partner,
+            recipientId,
+            recipientUsername: user?.username || "",
+            encryptedPayload: msg.encryptedPayload,
+            decryptedContent: decryptionResult.content,
+            messageType: msg.messageType || "message",
+            delivered: msg.delivered,
+            read: false, // Inbox implies potentially unread
+            createdAt: msg.createdAt,
+            status:
+              msg.status === "failed" ||
+              msg.status === "sending" ||
+              msg.status === "sent"
+                ? msg.status
+                : "sent",
+          } as Message;
+        });
+
+        addMessages(partner, mappedMessages.reverse());
+      }
+    } catch (error) {
+      console.error("Failed to load inbox:", error);
     }
   };
 
   const loadContacts = async () => {
+    setIsContactsLoading(true);
     try {
       console.log("Loading contacts...");
       const response: any = await api.getContacts();
@@ -401,6 +490,16 @@ export const Chat: React.FC = () => {
       }));
 
       console.log(`Loaded ${mappedContacts.length} contacts`);
+
+      // Debug: Log each contact's publicKey
+      mappedContacts.forEach((c: any) => {
+        console.log(
+          `Contact ${c.username}: publicKey=${
+            c.publicKey ? "present" : "MISSING"
+          } (${c.publicKey?.length || 0} chars)`
+        );
+      });
+
       setContacts(mappedContacts);
     } catch (error: any) {
       console.error("Failed to load contacts:", error);
@@ -412,6 +511,8 @@ export const Chat: React.FC = () => {
           "error"
         );
       }
+    } finally {
+      setIsContactsLoading(false);
     }
   };
 
@@ -487,17 +588,57 @@ export const Chat: React.FC = () => {
     }
     websocket.send("typing_stop", { recipientUsername: activeConversation });
 
-    const contact = contacts.find((c) => c.username === activeConversation);
-    if (!contact) {
-      showToast("✗ Contact not found", "error");
-      return;
+    // HARD GATE: Ensure contact with valid publicKey exists
+    let contact = contacts.find((c) => c.username === activeConversation);
+
+    console.log(`[Send] Initial contact check:`, {
+      found: !!contact,
+      username: contact?.username,
+      hasPublicKey: !!contact?.publicKey,
+      publicKeyLength: contact?.publicKey?.length || 0,
+      totalContacts: contacts.length,
+    });
+
+    // If contact not found OR publicKey missing, attempt to load contacts
+    if (!contact || !contact.publicKey) {
+      console.log("Contact or publicKey missing, loading contacts...");
+
+      // If already loading, wait for it to complete
+      if (isContactsLoading) {
+        showToast("Loading contact information...", "info");
+        return;
+      }
+
+      // Load contacts and wait for completion
+      await loadContacts();
+
+      // Re-read contact from store AFTER load completes
+      contact = contacts.find((c) => c.username === activeConversation);
+
+      console.log(`[Send] After reload:`, {
+        found: !!contact,
+        username: contact?.username,
+        hasPublicKey: !!contact?.publicKey,
+        publicKeyLength: contact?.publicKey?.length || 0,
+        totalContacts: contacts.length,
+      });
+
+      // If still not found or publicKey still missing, hard fail
+      if (!contact) {
+        showToast("✗ Contact not found. Please try again.", "error");
+        return;
+      }
+
+      if (!contact.publicKey) {
+        showToast(
+          "✗ Contact encryption key not available. Please refresh and try again.",
+          "error"
+        );
+        return;
+      }
     }
 
-    if (!contact.publicKey) {
-      showToast("✗ Contact public key not available. Try refreshing.", "error");
-      return;
-    }
-
+    // At this point, contact.publicKey is GUARANTEED to be present
     if (!contact.cryptoProfileId) {
       showToast(
         "✗ Contact crypto profile not available. Try refreshing.",
@@ -537,13 +678,12 @@ export const Chat: React.FC = () => {
         messageType: "message",
         delivered: false,
         createdAt: new Date().toISOString(),
-        status: 'sending'
+        status: "sending",
       });
 
       scrollToBottom(); // Ensure we see our new message
 
-      // 2. Encrypt
-      // console.log("Encrypting message for:", contact.username);
+      // 2. Encrypt (publicKey is guaranteed valid at this point)
       const encryptedPayload = encryptMessage(
         contentToSend,
         contact.publicKey,
@@ -558,21 +698,22 @@ export const Chat: React.FC = () => {
         "message"
       );
 
-      // console.log("Message sent via WebSocket:", result);
-
       // 4. Update with real ID and success status
-      updateMessageId(tempId, result.messageId || Date.now().toString(), 'sent');
+      updateMessageId(
+        tempId,
+        result.messageId || Date.now().toString(),
+        "sent"
+      );
 
       // Update store with delivered status if provided immediately
       if (result.deliveredRealtime) {
         updateMessageStatus(result.messageId, true);
       }
-
     } catch (error: any) {
       console.error("Send message error:", error);
 
       // Mark as failed in UI
-      updateMessageId(tempId, tempId, 'failed');
+      updateMessageId(tempId, tempId, "failed");
 
       let errorMessage = "Failed to send message";
 
@@ -688,11 +829,10 @@ export const Chat: React.FC = () => {
   const handleLogout = async () => {
     await logout();
     navigate("/login");
-  }
-
+  };
 
   const handleRetryMessage = async (msg: any) => {
-    if (msg.status !== 'failed') return;
+    if (msg.status !== "failed") return;
 
     // Remove the failed message (or update to sending)
     // Actually better to delete and re-send to get a fresh ID and position
@@ -700,16 +840,19 @@ export const Chat: React.FC = () => {
 
     // We already have the logic in handleSendMessage but it relies on state `messageInput`.
     // We need to call the core sending logic directly.
-    // Let's adapt the logic or just re-populate input? 
+    // Let's adapt the logic or just re-populate input?
     // Re-populating input is easiest for UX (user can edit correction).
 
     setMessageInput(msg.decryptedContent || "");
     // delete ONLY the failed message from store so we don't duplicate
-    // Note: We don't have a delete action in store exposed here... 
-    // Ideally we'd have `removeMessage`. 
+    // Note: We don't have a delete action in store exposed here...
+    // Ideally we'd have `removeMessage`.
     // For now, let's just let the user re-send and the failed one stays as "history" or we can ignore it.
     // Better UX: Fill input.
-    showToast("📝 Message content restored to input. Try sending again.", "info");
+    showToast(
+      "📝 Message content restored to input. Try sending again.",
+      "info"
+    );
   };
 
   const activeConv = activeConversation
@@ -733,10 +876,11 @@ export const Chat: React.FC = () => {
             <h1 className="text-2xl font-bold text-gradient">VoidLink</h1>
             <div className="flex items-center gap-2 text-sm glass-light px-3 py-1.5 rounded-full">
               <div
-                className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${isConnected
-                  ? "bg-void-success shadow-lg shadow-void-success/50 animate-pulse"
-                  : "bg-void-danger"
-                  }`}
+                className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+                  isConnected
+                    ? "bg-void-success shadow-lg shadow-void-success/50 animate-pulse"
+                    : "bg-void-danger"
+                }`}
               />
               <span className="text-void-text-dim font-medium">
                 {isConnected ? "Connected" : "Disconnected"}
@@ -852,27 +996,32 @@ export const Chat: React.FC = () => {
               {(() => {
                 // 1. Merge Contacts and Active Conversations
                 const uniqueUsers = new Set<string>();
-                contacts.forEach(c => uniqueUsers.add(c.username));
-                Array.from(conversations.keys()).forEach(u => uniqueUsers.add(u));
+                contacts.forEach((c) => uniqueUsers.add(c.username));
+                Array.from(conversations.keys()).forEach((u) =>
+                  uniqueUsers.add(u)
+                );
 
                 // 2. Create display objects
-                const displayList = Array.from(uniqueUsers).map(username => {
-                  const contact = contacts.find(c => c.username === username);
+                const displayList = Array.from(uniqueUsers).map((username) => {
+                  const contact = contacts.find((c) => c.username === username);
                   const conversation = conversations.get(username);
                   const lastMsg = conversation?.lastMessage;
                   // Fallback for sorting: last message time -> contact added time -> 0
                   const sortTime = lastMsg?.createdAt
                     ? new Date(lastMsg.createdAt).getTime()
-                    : (contact?.addedAt ? new Date(contact.addedAt).getTime() : 0);
+                    : contact?.addedAt
+                    ? new Date(contact.addedAt).getTime()
+                    : 0;
 
                   return {
                     username,
-                    displayName: contact?.alias || contact?.username || username,
+                    displayName: contact?.username || username, // Alias removed
                     lastMessage: lastMsg,
                     unreadCount: conversation?.unreadCount || 0,
-                    isOnline: contact?.presence?.isOnline || conversation?.isOnline || false,
+                    isOnline:
+                      contact?.isOnline || conversation?.isOnline || false, // Use isOnline directly
                     isTyping: conversation?.isTyping || false,
-                    sortTime
+                    sortTime,
                   };
                 });
 
@@ -882,7 +1031,9 @@ export const Chat: React.FC = () => {
                 if (displayList.length === 0) {
                   return (
                     <p className="text-sm text-void-text-dim text-center py-8">
-                      No conversations yet.<br />Add a contact to start!
+                      No conversations yet.
+                      <br />
+                      Add a contact to start!
                     </p>
                   );
                 }
@@ -893,18 +1044,22 @@ export const Chat: React.FC = () => {
                       <button
                         key={chat.username}
                         onClick={() => setActiveConversation(chat.username)}
-                        className={`w-full p-2.5 rounded-lg text-left transition-colors duration-200 group ${activeConversation === chat.username
+                        className={`w-full p-2.5 rounded-lg text-left transition-colors duration-200 group ${
+                          activeConversation === chat.username
                             ? "bg-void-accent text-white"
                             : "hover:bg-white/5 text-void-text-primary"
-                          }`}
+                        }`}
                       >
                         <div className="flex items-center gap-3">
                           <div className="relative shrink-0">
-                            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold border border-white/5
-                              ${activeConversation === chat.username
-                                ? "bg-white/20 text-white"
-                                : "bg-gradient-to-br from-void-purple/20 to-void-accent/20 text-void-text-primary"
-                              }`}>
+                            <div
+                              className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold border border-white/5
+                              ${
+                                activeConversation === chat.username
+                                  ? "bg-white/20 text-white"
+                                  : "bg-gradient-to-br from-void-purple/20 to-void-accent/20 text-void-text-primary"
+                              }`}
+                            >
                               {chat.displayName.charAt(0).toUpperCase()}
                             </div>
                             {chat.isOnline && (
@@ -914,34 +1069,64 @@ export const Chat: React.FC = () => {
 
                           <div className="flex-1 min-w-0">
                             <div className="flex justify-between items-baseline mb-0.5">
-                              <h4 className={`font-semibold truncate text-[15px] ${activeConversation === chat.username ? "text-white" : "text-void-text-primary"
-                                }`}>
+                              <h4
+                                className={`font-semibold truncate text-[15px] ${
+                                  activeConversation === chat.username
+                                    ? "text-white"
+                                    : "text-void-text-primary"
+                                }`}
+                              >
                                 {chat.displayName}
                               </h4>
                               {chat.lastMessage && (
-                                <span className={`text-xs whitespace-nowrap ml-2 ${activeConversation === chat.username ? "text-white/70" : "text-void-text-dim"
-                                  }`}>
-                                  {new Date(chat.lastMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                <span
+                                  className={`text-xs whitespace-nowrap ml-2 ${
+                                    activeConversation === chat.username
+                                      ? "text-white/70"
+                                      : "text-void-text-dim"
+                                  }`}
+                                >
+                                  {new Date(
+                                    chat.lastMessage.createdAt
+                                  ).toLocaleTimeString([], {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
                                 </span>
                               )}
                             </div>
 
                             <div className="flex justify-between items-center h-5">
-                              <p className={`text-sm truncate pr-2 ${activeConversation === chat.username ? "text-white/80" : "text-void-text-dim"
-                                }`}>
+                              <p
+                                className={`text-sm truncate pr-2 ${
+                                  activeConversation === chat.username
+                                    ? "text-white/80"
+                                    : "text-void-text-dim"
+                                }`}
+                              >
                                 {chat.isTyping ? (
-                                  <span className={activeConversation === chat.username ? "text-white animate-pulse" : "text-void-accent animate-pulse"}>
+                                  <span
+                                    className={
+                                      activeConversation === chat.username
+                                        ? "text-white animate-pulse"
+                                        : "text-void-accent animate-pulse"
+                                    }
+                                  >
                                     typing...
                                   </span>
                                 ) : (
-                                  chat.lastMessage?.decryptedContent || "Start a conversation"
+                                  chat.lastMessage?.decryptedContent ||
+                                  "Start a conversation"
                                 )}
                               </p>
                               {chat.unreadCount > 0 && (
-                                <span className={`min-w-[1.25rem] h-5 px-1.5 rounded-full font-bold text-xs flex items-center justify-center ${activeConversation === chat.username
-                                    ? "bg-white text-void-accent"
-                                    : "bg-void-accent text-white"
-                                  }`}>
+                                <span
+                                  className={`min-w-[1.25rem] h-5 px-1.5 rounded-full font-bold text-xs flex items-center justify-center ${
+                                    activeConversation === chat.username
+                                      ? "bg-white text-void-accent"
+                                      : "bg-void-accent text-white"
+                                  }`}
+                                >
                                   {chat.unreadCount}
                                 </span>
                               )}
@@ -965,11 +1150,12 @@ export const Chat: React.FC = () => {
               <div className="p-4 border-b border-void-purple/30 glass-strong shadow-lg">
                 <div className="flex items-center gap-3">
                   <div
-                    className={`w-3 h-3 rounded-full ${contacts.find((c) => c.username === activeConversation)
-                      ?.isOnline
-                      ? "bg-void-success shadow-lg shadow-void-success/50 animate-pulse"
-                      : "bg-gray-500"
-                      }`}
+                    className={`w-3 h-3 rounded-full ${
+                      contacts.find((c) => c.username === activeConversation)
+                        ?.isOnline
+                        ? "bg-void-success shadow-lg shadow-void-success/50 animate-pulse"
+                        : "bg-gray-500"
+                    }`}
                   />
                   <h2 className="text-xl font-semibold">
                     {activeConversation}
@@ -1010,15 +1196,22 @@ export const Chat: React.FC = () => {
                       const isNewDay =
                         isFirstMessage ||
                         new Date(msg.createdAt).toDateString() !==
-                        new Date(prevMsg.createdAt).toDateString();
+                          new Date(prevMsg.createdAt).toDateString();
 
-                      let dateLabel = new Date(msg.createdAt).toLocaleDateString();
+                      let dateLabel = new Date(
+                        msg.createdAt
+                      ).toLocaleDateString();
                       const today = new Date().toDateString();
-                      const yesterday = new Date(Date.now() - 86400000).toDateString();
-                      const messageDate = new Date(msg.createdAt).toDateString();
+                      const yesterday = new Date(
+                        Date.now() - 86400000
+                      ).toDateString();
+                      const messageDate = new Date(
+                        msg.createdAt
+                      ).toDateString();
 
                       if (messageDate === today) dateLabel = "Today";
-                      else if (messageDate === yesterday) dateLabel = "Yesterday";
+                      else if (messageDate === yesterday)
+                        dateLabel = "Yesterday";
 
                       // Grouping Logic
                       const isFirstInGroup =
@@ -1028,11 +1221,17 @@ export const Chat: React.FC = () => {
 
                       const isLastInGroup =
                         index === messages.length - 1 ||
-                        messages[index + 1].senderUsername !== msg.senderUsername ||
-                        new Date(messages[index + 1].createdAt).toDateString() !== messageDate;
+                        messages[index + 1].senderUsername !==
+                          msg.senderUsername ||
+                        new Date(
+                          messages[index + 1].createdAt
+                        ).toDateString() !== messageDate;
 
                       return (
-                        <div key={msg.id} className="flex flex-col animate-fade-in">
+                        <div
+                          key={msg.id}
+                          className="flex flex-col animate-fade-in"
+                        >
                           {isNewDay && (
                             <div className="flex justify-center my-4 sticky top-0 z-10">
                               <span className="bg-void-black/60 backdrop-blur-md text-void-text-dim text-xs px-3 py-1 rounded-full border border-void-purple/20 shadow-sm">
@@ -1042,18 +1241,32 @@ export const Chat: React.FC = () => {
                           )}
 
                           <div
-                            className={`flex ${isMe ? "justify-end" : "justify-start"} ${isFirstInGroup ? "mt-2" : "mt-0.5"
-                              }`}
+                            className={`flex ${
+                              isMe ? "justify-end" : "justify-start"
+                            } ${isFirstInGroup ? "mt-2" : "mt-0.5"}`}
                           >
                             <div
-                              className={`max-w-[75%] md:max-w-md px-4 py-2 shadow-sm relative group ${isMe
-                                ? `bg-void-accent text-white ${isFirstInGroup ? "rounded-tr-2xl rounded-tl-2xl" : "rounded-tr-md rounded-tl-2xl"
-                                } ${isLastInGroup ? "rounded-br-2xl rounded-bl-2xl" : "rounded-br-md rounded-bl-2xl"
-                                }`
-                                : `glass-light ${isFirstInGroup ? "rounded-tl-2xl rounded-tr-2xl" : "rounded-tl-md rounded-tr-2xl"
-                                } ${isLastInGroup ? "rounded-bl-2xl rounded-br-2xl" : "rounded-bl-md rounded-br-2xl"
-                                }`
-                                }`}
+                              className={`max-w-[75%] md:max-w-md px-4 py-2 shadow-sm relative group ${
+                                isMe
+                                  ? `bg-void-accent text-white ${
+                                      isFirstInGroup
+                                        ? "rounded-tr-2xl rounded-tl-2xl"
+                                        : "rounded-tr-md rounded-tl-2xl"
+                                    } ${
+                                      isLastInGroup
+                                        ? "rounded-br-2xl rounded-bl-2xl"
+                                        : "rounded-br-md rounded-bl-2xl"
+                                    }`
+                                  : `glass-light ${
+                                      isFirstInGroup
+                                        ? "rounded-tl-2xl rounded-tr-2xl"
+                                        : "rounded-tl-md rounded-tr-2xl"
+                                    } ${
+                                      isLastInGroup
+                                        ? "rounded-bl-2xl rounded-br-2xl"
+                                        : "rounded-bl-md rounded-br-2xl"
+                                    }`
+                              }`}
                             >
                               {!isMe && isFirstInGroup && (
                                 <p className="text-xs font-bold text-void-accent mb-1 opacity-80">
@@ -1063,24 +1276,58 @@ export const Chat: React.FC = () => {
                               <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">
                                 {msg.decryptedContent || "[Encrypted]"}
                               </p>
-                              <div className={`flex items-center justify-end gap-1.5 mt-1 select-none ${isMe ? "text-void-white/70" : "text-void-text-dim/70"}`}>
+                              <div
+                                className={`flex items-center justify-end gap-1.5 mt-1 select-none ${
+                                  isMe
+                                    ? "text-void-white/70"
+                                    : "text-void-text-dim/70"
+                                }`}
+                              >
                                 <span className="text-[10px]">
-                                  {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  {new Date(msg.createdAt).toLocaleTimeString(
+                                    [],
+                                    { hour: "2-digit", minute: "2-digit" }
+                                  )}
                                 </span>
                                 {isMe && (
                                   <span
-                                    className={`text-[10px] ${msg.status === 'failed' ? 'cursor-pointer hover:scale-110 transition-transform' : ''}`}
+                                    className={`text-[10px] ${
+                                      msg.status === "failed"
+                                        ? "cursor-pointer hover:scale-110 transition-transform"
+                                        : ""
+                                    } ${
+                                      // Color coding for delivery status
+                                      msg.read || msg.delivered
+                                        ? "text-blue-400"
+                                        : "text-void-white/50"
+                                    }`}
                                     onClick={(e) => {
-                                      if (msg.status === 'failed') {
+                                      if (msg.status === "failed") {
                                         e.stopPropagation();
                                         handleRetryMessage(msg);
                                       }
                                     }}
-                                    title={msg.status === 'failed' ? "Click to retry" : ""}
+                                    title={
+                                      msg.status === "failed"
+                                        ? "Click to retry"
+                                        : msg.read
+                                        ? "Read"
+                                        : msg.delivered
+                                        ? "Delivered"
+                                        : msg.status === "sending"
+                                        ? "Sending..."
+                                        : "Sent"
+                                    }
                                   >
-                                    {msg.status === 'failed' ? "❌" :
-                                      msg.status === 'sending' ? "🕒" :
-                                        msg.read ? "✓✓" : "✓"}
+                                    {msg.status === "failed"
+                                      ? "❌"
+                                      : msg.status === "sending"
+                                      ? "🕒"
+                                      : msg.read
+                                      ? "✓✓"
+                                      : msg.delivered
+                                      ? "✓"
+                                      : "✓"}
                                   </span>
                                 )}
                               </div>
@@ -1137,8 +1384,12 @@ export const Chat: React.FC = () => {
                     placeholder="Type a message..."
                     className="flex-1 px-5 py-3 glass rounded-xl focus:outline-none focus:border-void-accent/50 focus:ring-2 focus:ring-void-accent/30 transition-all duration-300"
                   />
-                  <Button onClick={handleSendMessage} className="px-8">
-                    Send
+                  <Button
+                    onClick={handleSendMessage}
+                    className="px-8"
+                    disabled={isContactsLoading}
+                  >
+                    {isContactsLoading ? "Loading..." : "Send"}
                   </Button>
                 </div>
               </div>
@@ -1192,6 +1443,31 @@ export const Chat: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Passphrase Prompt Modal */}
+      <PassphrasePrompt
+        isOpen={showPassphrasePrompt}
+        onSuccess={async () => {
+          setShowPassphrasePrompt(false);
+          // Reload contacts to ensure publicKey is available
+          await loadContacts();
+          // Trigger reactive decryption by reloading conversation
+          if (activeConversation) {
+            loadConversationHistory(activeConversation);
+          }
+        }}
+        onCancel={() => {
+          setShowPassphrasePrompt(false);
+          showToast(
+            "You can re-enter your passphrase anytime to decrypt messages.",
+            "info"
+          );
+        }}
+        onReAuthenticate={async (passphrase: string) => {
+          return await authService.reAuthenticateWithPassphrase(passphrase);
+        }}
+      />
+
       <ToastContainer />
     </div>
   );

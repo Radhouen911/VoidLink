@@ -90,6 +90,8 @@ CREATE TABLE IF NOT EXISTS messages (
     message_type VARCHAR(50) DEFAULT 'message',
     delivered BOOLEAN DEFAULT FALSE,
     delivered_at TIMESTAMP WITH TIME ZONE,
+    deleted_by_sender BOOLEAN DEFAULT FALSE,
+    deleted_by_recipient BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
