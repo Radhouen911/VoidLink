@@ -861,31 +861,32 @@ export const Chat: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-void-black flex items-center justify-center">
+      <div className="min-h-screen auth-gradient-bg flex items-center justify-center">
         <Loading size="lg" text="Loading your conversations..." />
       </div>
     );
   }
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-void-black">
+    <div className="h-screen flex flex-col overflow-hidden auth-gradient-bg">
       {/* Header */}
-      <div className="bg-void-dark border-b border-void-border sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <h1 className="text-lg font-semibold text-void-text">VoidLink</h1>
-            <div className="flex items-center gap-2 text-xs bg-void-black px-2.5 py-1 rounded-full border border-void-border">
+      <div className="bg-black/20 backdrop-blur-md border-b border-white/10 sticky top-0 z-10">
+        <div className="container mx-auto px-6 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-4">
+            <img src="/logo.png" alt="VoidLink" className="h-5 w-auto" />
+            <h1 className="text-xl font-bold text-white">VoidLink</h1>
+            <div className="flex items-center gap-2 text-xs bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/20">
               <div
                 className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                  isConnected ? "bg-void-success" : "bg-void-danger"
+                  isConnected ? "bg-green-400" : "bg-red-400"
                 }`}
               />
-              <span className="text-void-text-dim font-medium">
+              <span className="text-white/80 font-medium">
                 {isConnected ? "Connected" : "Disconnected"}
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <select
               value={user?.presenceStatus || "online"}
               onChange={(e) => {
@@ -897,13 +898,22 @@ export const Chat: React.FC = () => {
                 useAuthStore.getState().setPresenceStatus(status);
                 websocket.send("presence_update", { status });
               }}
-              className="px-3 py-1.5 bg-void-dark rounded-lg text-sm border border-void-border focus:outline-none focus:border-void-accent focus:ring-2 focus:ring-void-accent/20 cursor-pointer transition-all duration-150 hover:bg-void-hover"
+              className="px-4 py-2 bg-white/10 backdrop-blur-sm rounded-lg text-sm border border-white/30 text-white font-medium focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/30 focus:bg-white/20 active:bg-white/25 cursor-pointer transition-all duration-150 hover:bg-white/15 hover:border-white/40 appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22white%22%3E%3cpath%20fill-rule%3D%22evenodd%22%20d%3D%22M5.293%207.293a1%201%200%20011.414%200L10%2010.586l3.293-3.293a1%201%200%20111.414%201.414l-4%204a1%201%200%2001-1.414%200l-4-4a1%201%200%20010-1.414z%22%20clip-rule%3D%22evenodd%22%2F%3E%3c%2Fsvg%3E')] bg-[length:1.5em_1.5em] bg-[right_0.5rem_center] bg-no-repeat pr-10 shadow-lg"
+              style={{
+                colorScheme: "dark",
+              }}
             >
-              <option value="online">🟢 Online</option>
-              <option value="away">🟡 Away</option>
-              <option value="busy">🔴 Busy</option>
+              <option value="online" className="bg-slate-800 text-white">
+                🟢 Online
+              </option>
+              <option value="away" className="bg-slate-800 text-white">
+                🟡 Away
+              </option>
+              <option value="busy" className="bg-slate-800 text-white">
+                🔴 Busy
+              </option>
             </select>
-            <span className="text-void-text-dim text-sm font-medium">
+            <span className="text-white/80 text-sm font-medium">
               {user?.username}
             </span>
             <Button variant="secondary" size="sm" onClick={handleLogout}>
@@ -914,10 +924,10 @@ export const Chat: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden p-4 gap-4">
         {/* Contacts Sidebar */}
-        <div className="w-88 bg-void-dark border-r border-void-border flex flex-col">
-          <div className="p-3 border-b border-void-border">
+        <div className="w-96 glass-auth-strong rounded-2xl flex flex-col overflow-hidden">
+          <div className="p-4 border-b border-white/10">
             <div className="flex gap-2">
               <Button
                 className="flex-1"
@@ -940,23 +950,23 @@ export const Chat: React.FC = () => {
 
           {/* Pending Requests */}
           {pendingRequests.length > 0 && (
-            <div className="border-b border-void-border bg-void-black/30">
-              <div className="p-3">
-                <h3 className="text-xs font-semibold text-void-accent mb-2 flex items-center gap-2 uppercase tracking-wide">
-                  <span className="w-1.5 h-1.5 bg-void-accent rounded-full"></span>
+            <div className="border-b border-white/10 bg-white/5">
+              <div className="p-4">
+                <h3 className="text-xs font-semibold text-purple-300 mb-3 flex items-center gap-2 uppercase tracking-wide">
+                  <span className="w-1.5 h-1.5 bg-purple-400 rounded-full"></span>
                   Pending Requests ({pendingRequests.length})
                 </h3>
                 <div className="space-y-2">
                   {pendingRequests.map((req) => (
                     <div
                       key={req.id}
-                      className="p-3 bg-void-dark rounded-lg border border-void-border hover:border-void-accent/50 transition-all duration-150"
+                      className="p-3 bg-white/5 rounded-xl border border-white/10 hover:border-purple-400/50 transition-all duration-150"
                     >
-                      <p className="text-sm font-medium mb-1.5 text-void-text">
+                      <p className="text-sm font-medium mb-1.5 text-white">
                         {req.requesterUsername}
                       </p>
                       {req.message && (
-                        <p className="text-xs text-void-text-dim mb-2 line-clamp-2">
+                        <p className="text-xs text-white/60 mb-2 line-clamp-2">
                           "{req.message}"
                         </p>
                       )}
@@ -986,10 +996,10 @@ export const Chat: React.FC = () => {
 
           {/* Conversation List */}
           <div className="flex-1 overflow-y-auto scrollbar-thin">
-            <div className="p-2">
+            <div className="p-3">
               {/* Search Bar */}
-              <div className="mb-2 px-1">
-                <div className="bg-void-black/50 rounded-lg px-3 py-2 text-sm text-void-text-dim flex items-center gap-2 border border-void-border-light">
+              <div className="mb-3 px-1">
+                <div className="bg-white/5 rounded-lg px-4 py-2.5 text-sm text-white/60 flex items-center gap-2 border border-white/10">
                   <svg
                     className="w-4 h-4"
                     fill="none"
@@ -1042,7 +1052,7 @@ export const Chat: React.FC = () => {
                 if (displayList.length === 0) {
                   return (
                     <div className="text-center py-12 px-4">
-                      <div className="text-void-text-dim text-sm">
+                      <div className="text-white/60 text-sm">
                         <p className="mb-1">No conversations yet</p>
                         <p className="text-xs">
                           Add a contact to start chatting
@@ -1053,30 +1063,30 @@ export const Chat: React.FC = () => {
                 }
 
                 return (
-                  <div className="space-y-0.5">
+                  <div className="space-y-1">
                     {displayList.map((chat) => (
                       <button
                         key={chat.username}
                         onClick={() => setActiveConversation(chat.username)}
-                        className={`w-full p-2.5 rounded-lg text-left transition-all duration-150 group ${
+                        className={`w-full p-3 rounded-xl text-left transition-all duration-150 group ${
                           activeConversation === chat.username
-                            ? "bg-void-accent text-white"
-                            : "hover:bg-void-hover text-void-text"
+                            ? "bg-purple-500/30 border border-purple-400/50"
+                            : "hover:bg-white/5 border border-transparent"
                         }`}
                       >
                         <div className="flex items-center gap-3">
                           <div className="relative shrink-0">
                             <div
-                              className={`w-11 h-11 rounded-full flex items-center justify-center text-base font-semibold ${
+                              className={`w-12 h-12 rounded-full flex items-center justify-center text-base font-semibold ${
                                 activeConversation === chat.username
-                                  ? "bg-white/20 text-white"
-                                  : "bg-void-black text-void-text"
+                                  ? "bg-purple-400/30 text-white border-2 border-purple-400"
+                                  : "bg-white/10 text-white"
                               }`}
                             >
                               {chat.displayName.charAt(0).toUpperCase()}
                             </div>
                             {chat.isOnline && (
-                              <div className="absolute bottom-0 right-0 w-3 h-3 bg-void-success rounded-full border-2 border-void-dark"></div>
+                              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 rounded-full border-2 border-slate-900"></div>
                             )}
                           </div>
 
@@ -1086,7 +1096,7 @@ export const Chat: React.FC = () => {
                                 className={`font-medium truncate text-sm ${
                                   activeConversation === chat.username
                                     ? "text-white"
-                                    : "text-void-text"
+                                    : "text-white/90"
                                 }`}
                               >
                                 {chat.displayName}
@@ -1096,7 +1106,7 @@ export const Chat: React.FC = () => {
                                   className={`text-xs whitespace-nowrap ml-2 ${
                                     activeConversation === chat.username
                                       ? "text-white/70"
-                                      : "text-void-text-dim"
+                                      : "text-white/50"
                                   }`}
                                 >
                                   {new Date(
@@ -1113,8 +1123,8 @@ export const Chat: React.FC = () => {
                               <p
                                 className={`text-xs truncate pr-2 ${
                                   activeConversation === chat.username
-                                    ? "text-white/80"
-                                    : "text-void-text-dim"
+                                    ? "text-white/70"
+                                    : "text-white/50"
                                 }`}
                               >
                                 {chat.isTyping ? (
@@ -1128,8 +1138,8 @@ export const Chat: React.FC = () => {
                                 <span
                                   className={`min-w-[1.125rem] h-[1.125rem] px-1 rounded-full font-semibold text-[10px] flex items-center justify-center shrink-0 ${
                                     activeConversation === chat.username
-                                      ? "bg-white text-void-accent"
-                                      : "bg-void-accent text-white"
+                                      ? "bg-white text-purple-600"
+                                      : "bg-purple-500 text-white"
                                   }`}
                                 >
                                   {chat.unreadCount > 99
@@ -1150,21 +1160,21 @@ export const Chat: React.FC = () => {
         </div>
 
         {/* Chat Area */}
-        <div className="flex-1 flex flex-col bg-void-black">
+        <div className="flex-1 flex flex-col glass-auth-strong rounded-2xl overflow-hidden">
           {activeConversation ? (
             <>
               {/* Chat Header */}
-              <div className="px-4 py-3 border-b border-void-border bg-void-dark">
+              <div className="px-6 py-4 border-b border-white/10 bg-white/5">
                 <div className="flex items-center gap-3">
                   <div
-                    className={`w-2.5 h-2.5 rounded-full ${
+                    className={`w-3 h-3 rounded-full ${
                       contacts.find((c) => c.username === activeConversation)
                         ?.isOnline
-                        ? "bg-void-success"
-                        : "bg-void-text-dim"
+                        ? "bg-green-400"
+                        : "bg-white/30"
                     }`}
                   />
-                  <h2 className="text-base font-semibold text-void-text">
+                  <h2 className="text-lg font-semibold text-white">
                     {activeConversation}
                   </h2>
                 </div>
@@ -1174,11 +1184,11 @@ export const Chat: React.FC = () => {
               <div
                 ref={messagesContainerRef}
                 onScroll={handleScrollEvents}
-                className="flex-1 overflow-y-auto p-4 space-y-1 scrollbar-thin"
+                className="flex-1 overflow-y-auto p-6 space-y-1 scrollbar-thin"
               >
                 {isLoadingMore && (
                   <div className="text-center py-2">
-                    <span className="text-xs text-void-text-dim">
+                    <span className="text-xs text-white/60">
                       Loading more messages...
                     </span>
                   </div>
@@ -1186,9 +1196,9 @@ export const Chat: React.FC = () => {
                 {!activeConv || activeConv.messages.length === 0 ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center">
-                      <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-void-dark flex items-center justify-center">
+                      <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-white/10 flex items-center justify-center">
                         <svg
-                          className="w-8 h-8 text-void-text-dim"
+                          className="w-8 h-8 text-white/60"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -1201,10 +1211,8 @@ export const Chat: React.FC = () => {
                           />
                         </svg>
                       </div>
-                      <p className="text-void-text-dim text-sm">
-                        No messages yet
-                      </p>
-                      <p className="text-void-text-secondary text-xs mt-1">
+                      <p className="text-white/70 text-sm">No messages yet</p>
+                      <p className="text-white/50 text-xs mt-1">
                         Start the conversation!
                       </p>
                     </div>
@@ -1256,7 +1264,7 @@ export const Chat: React.FC = () => {
                         <div key={msg.id} className="flex flex-col">
                           {isNewDay && (
                             <div className="flex justify-center my-3 sticky top-0 z-10">
-                              <span className="bg-void-dark/90 text-void-text-dim text-xs px-3 py-1 rounded-full border border-void-border">
+                              <span className="bg-white/10 backdrop-blur-md text-white/70 text-xs px-4 py-1.5 rounded-full border border-white/20">
                                 {dateLabel}
                               </span>
                             </div>
@@ -1268,9 +1276,9 @@ export const Chat: React.FC = () => {
                             } ${isFirstInGroup ? "mt-2" : "mt-0.5"}`}
                           >
                             <div
-                              className={`max-w-[70%] md:max-w-md px-3 py-2 relative group ${
+                              className={`max-w-[70%] md:max-w-md px-4 py-2.5 relative group ${
                                 isMe
-                                  ? `bg-void-accent text-white ${
+                                  ? `bg-purple-500/80 text-white backdrop-blur-sm ${
                                       isFirstInGroup
                                         ? "rounded-tr-2xl rounded-tl-2xl"
                                         : "rounded-tr-sm rounded-tl-2xl"
@@ -1279,7 +1287,7 @@ export const Chat: React.FC = () => {
                                         ? "rounded-br-2xl rounded-bl-2xl"
                                         : "rounded-br-sm rounded-bl-2xl"
                                     }`
-                                  : `bg-void-dark text-void-text ${
+                                  : `bg-white/10 backdrop-blur-sm text-white border border-white/20 ${
                                       isFirstInGroup
                                         ? "rounded-tl-2xl rounded-tr-2xl"
                                         : "rounded-tl-sm rounded-tr-2xl"
@@ -1291,7 +1299,7 @@ export const Chat: React.FC = () => {
                               }`}
                             >
                               {!isMe && isFirstInGroup && (
-                                <p className="text-xs font-semibold text-void-accent mb-1">
+                                <p className="text-xs font-semibold text-purple-300 mb-1">
                                   {msg.senderUsername}
                                 </p>
                               )}
@@ -1300,7 +1308,7 @@ export const Chat: React.FC = () => {
                               </p>
                               <div
                                 className={`flex items-center justify-end gap-1 mt-1 select-none ${
-                                  isMe ? "text-white/60" : "text-void-text-dim"
+                                  isMe ? "text-white/60" : "text-white/50"
                                 }`}
                               >
                                 <span className="text-[10px]">
@@ -1360,19 +1368,19 @@ export const Chat: React.FC = () => {
                 {/* Typing Indicator */}
                 {activeConv?.isTyping && (
                   <div className="flex justify-start animate-fade-in">
-                    <div className="bg-void-dark rounded-2xl px-4 py-2.5 border border-void-border">
+                    <div className="bg-white/10 backdrop-blur-sm rounded-2xl px-4 py-2.5 border border-white/20">
                       <div className="flex items-center gap-2">
                         <div className="flex gap-1">
                           <div
-                            className="w-2 h-2 bg-void-text-dim rounded-full animate-bounce"
+                            className="w-2 h-2 bg-white/60 rounded-full animate-bounce"
                             style={{ animationDelay: "0ms" }}
                           ></div>
                           <div
-                            className="w-2 h-2 bg-void-text-dim rounded-full animate-bounce"
+                            className="w-2 h-2 bg-white/60 rounded-full animate-bounce"
                             style={{ animationDelay: "150ms" }}
                           ></div>
                           <div
-                            className="w-2 h-2 bg-void-text-dim rounded-full animate-bounce"
+                            className="w-2 h-2 bg-white/60 rounded-full animate-bounce"
                             style={{ animationDelay: "300ms" }}
                           ></div>
                         </div>
@@ -1383,8 +1391,8 @@ export const Chat: React.FC = () => {
               </div>
 
               {/* Message Input */}
-              <div className="p-4 border-t border-void-border bg-void-dark">
-                <div className="flex gap-2">
+              <div className="p-4 border-t border-white/10 bg-white/5">
+                <div className="flex gap-3">
                   <input
                     type="text"
                     value={messageInput}
@@ -1396,7 +1404,7 @@ export const Chat: React.FC = () => {
                       }
                     }}
                     placeholder="Type a message..."
-                    className="flex-1 px-4 py-2.5 bg-void-black border border-void-border rounded-lg text-void-text placeholder-void-text-dim focus:outline-none focus:border-void-accent focus:ring-2 focus:ring-void-accent/20 transition-all duration-150"
+                    className="flex-1 px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all duration-150"
                     disabled={isContactsLoading}
                   />
                   <Button
@@ -1410,11 +1418,11 @@ export const Chat: React.FC = () => {
               </div>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center bg-void-black">
+            <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
-                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-void-dark flex items-center justify-center">
+                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-white/10 flex items-center justify-center">
                   <svg
-                    className="w-10 h-10 text-void-text-dim"
+                    className="w-10 h-10 text-white/60"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -1427,10 +1435,10 @@ export const Chat: React.FC = () => {
                     />
                   </svg>
                 </div>
-                <p className="text-void-text text-base mb-1">
+                <p className="text-white text-base mb-1">
                   Select a contact to start chatting
                 </p>
-                <p className="text-void-text-dim text-sm flex items-center justify-center gap-1">
+                <p className="text-white/60 text-sm flex items-center justify-center gap-1">
                   <svg
                     className="w-4 h-4"
                     fill="none"
@@ -1454,12 +1462,10 @@ export const Chat: React.FC = () => {
 
       {/* Add Contact Modal */}
       {showAddContact && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 animate-fade-in">
-          <div className="bg-void-dark border border-void-border rounded-xl max-w-md w-full mx-4 animate-fade-in">
-            <div className="px-6 py-4 border-b border-void-border">
-              <h2 className="text-lg font-semibold text-void-text">
-                Add Contact
-              </h2>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
+          <div className="glass-auth-strong rounded-2xl max-w-md w-full mx-4 animate-fade-scale-in">
+            <div className="px-6 py-4 border-b border-white/10">
+              <h2 className="text-xl font-semibold text-white">Add Contact</h2>
             </div>
             <div className="p-6">
               <Input

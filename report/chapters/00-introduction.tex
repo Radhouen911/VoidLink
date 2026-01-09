@@ -1,0 +1,94 @@
+\chapter*{Introduction}
+\addcontentsline{toc}{chapter}{Introduction}
+
+\section*{General Context of Secure Messaging}
+
+In the digital age, instant messaging has become an essential component of daily communication. However, the centralized nature of most messaging platforms raises significant privacy concerns. Users must trust service providers not to access their private conversations, a trust that has been repeatedly violated through data breaches, government surveillance programs, and corporate data mining practices.
+
+The need for truly secure communication systems has never been more critical. Traditional messaging platforms operate on a trust-based model where the service provider has technical capability to access message content. This fundamental design flaw creates a single point of failure for user privacy.
+
+\section*{Motivation of the Project}
+
+VoidLink was conceived to address the fundamental privacy limitations of centralized messaging systems. The project's core motivation is to demonstrate that secure messaging does not require users to trust the service operator. By implementing a zero-trust architecture, VoidLink proves that privacy can be a mathematical guarantee rather than a corporate promise.
+
+The project aims to show that:
+\begin{itemize}
+    \item End-to-end encryption can be implemented without compromising user experience
+    \item Zero-trust architectures are practical for real-world applications
+    \item Privacy-by-design is achievable with modern web technologies
+    \item Cryptographic security can be transparent to end users
+\end{itemize}
+
+\section*{Project Objectives}
+
+The primary objectives of VoidLink are:
+
+\textbf{Security Objectives:}
+\begin{itemize}
+    \item Implement end-to-end encryption where the server cannot decrypt messages
+    \item Ensure private keys never leave the client device in unencrypted form
+    \item Provide cryptographic authentication independent of account credentials
+    \item Protect against common web vulnerabilities (XSS, CSRF, injection attacks)
+\end{itemize}
+
+\textbf{Functional Objectives:}
+\begin{itemize}
+    \item Enable real-time one-to-one messaging between users
+    \item Implement contact request and acceptance workflow
+    \item Provide offline message queuing and delivery
+    \item Support user presence indicators and typing notifications
+    \item Enable encrypted key backup for multi-device access
+\end{itemize}
+
+\textbf{Technical Objectives:}
+\begin{itemize}
+    \item Design a scalable client-server architecture
+    \item Implement efficient WebSocket-based real-time communication
+    \item Create comprehensive audit logging for security monitoring
+    \item Develop automated testing infrastructure
+\end{itemize}
+
+\section*{Brief Presentation of Chosen Technologies}
+
+VoidLink leverages modern web technologies to achieve its security and functional goals:
+
+\textbf{Frontend Technologies:}
+\begin{itemize}
+    \item \textbf{React 18:} Component-based UI framework for building interactive interfaces
+    \item \textbf{TypeScript:} Type-safe JavaScript for reduced runtime errors
+    \item \textbf{TweetNaCl.js:} High-security cryptographic library implementing NaCl
+    \item \textbf{ed2curve:} Library for converting Ed25519 keys to Curve25519 format
+    \item \textbf{Zustand:} Lightweight state management for React applications
+\end{itemize}
+
+\textbf{Backend Technologies:}
+\begin{itemize}
+    \item \textbf{Node.js:} JavaScript runtime for server-side execution
+    \item \textbf{Express:} Minimal web framework for REST API implementation
+    \item \textbf{PostgreSQL:} Relational database for persistent data storage
+    \item \textbf{WebSocket (ws):} Real-time bidirectional communication protocol
+    \item \textbf{bcrypt:} Password hashing library for account security
+\end{itemize}
+
+\textbf{Cryptographic Primitives:}
+\begin{itemize}
+    \item \textbf{Ed25519:} Digital signature algorithm for authentication
+    \item \textbf{Curve25519:} Elliptic curve for Diffie-Hellman key exchange
+    \item \textbf{NaCl box:} Authenticated encryption for message confidentiality
+    \item \textbf{NaCl secretbox:} Symmetric encryption for key storage
+\end{itemize}
+
+\section*{Structure of the Report}
+
+This report is organized as follows:
+
+\textbf{Chapter 1} presents the general context and existing study of secure messaging systems, analyzing the limitations of centralized platforms and the motivation for zero-trust approaches.
+
+\textbf{Chapter 2} describes the system analysis and architecture, including functional requirements, actor interactions, and detailed architectural diagrams showing the separation between trusted and untrusted zones.
+
+\textbf{Chapter 3} covers the implementation and security aspects, explaining technology choices, cryptographic design decisions, and the two-layer authentication system that enables zero-trust operation.
+
+\textbf{Chapter 4} presents the testing strategy, functional test results, observed system behavior, and identified limitations with potential future improvements.
+
+\textbf{The Conclusion} summarizes the achieved objectives, technical and academic outcomes, and discusses future perspectives for the project.
+\end{document}

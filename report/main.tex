@@ -1,0 +1,118 @@
+\documentclass[12pt,a4paper]{report}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{geometry}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{tocloft}
+\usepackage{acronym}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+
+% Page geometry
+\geometry{
+    a4paper,
+    left=3cm,
+    right=2.5cm,
+    top=2.5cm,
+    bottom=2.5cm
+}
+
+% Header and footer
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\leftmark}
+\fancyhead[R]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% Code listing style
+\lstset{
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    frame=single,
+    numbers=left,
+    numberstyle=\tiny,
+    keywordstyle=\color{blue},
+    commentstyle=\color{gray},
+    stringstyle=\color{red},
+    showstringspaces=false
+}
+
+% Hyperref setup
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    filecolor=magenta,
+    urlcolor=blue,
+    citecolor=blue,
+    pdftitle={VoidLink: Zero-Trust Secure Messaging System},
+    pdfauthor={Mohamed Radhouen Boufateh, Abdelkader Ben Nejma}
+}
+
+% Title formatting
+\titleformat{\chapter}[display]
+{\normalfont\huge\bfseries}{\chaptertitlename\ \thechapter}{20pt}{\Huge}
+\titlespacing*{\chapter}{0pt}{-20pt}{40pt}
+
+\begin{document}
+
+% Title page
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+    
+    {\Huge\bfseries VoidLink\\[0.5cm]}
+    {\LARGE Zero-Trust Secure Messaging System\\[1.5cm]}
+    
+    {\Large Technical Project Report\\[3cm]}
+    
+    {\large
+    \textbf{Authors:}\\
+    Mohamed Radhouen Boufateh\\
+    Abdelkader Ben Nejma\\[1cm]
+    
+    \textbf{Supervisor:}\\
+    Basma K'hil\\[2cm]
+    }
+    
+    \vfill
+    
+    {\large \today}
+\end{titlepage}
+
+% Abstract and front matter
+\pagenumbering{roman}
+
+\include{chapters/00-resume}
+\include{chapters/00-abstract}
+
+\tableofcontents
+\listoffigures
+
+\include{chapters/00-acronyms}
+
+% Main content
+\cleardoublepage
+\pagenumbering{arabic}
+
+\include{chapters/00-introduction}
+\include{chapters/01-context}
+\include{chapters/02-architecture}
+\include{chapters/03-implementation}
+\include{chapters/04-tests}
+\include{chapters/05-conclusion}
+
+% Bibliography
+\bibliographystyle{ieeetr}
+\bibliography{references}
+
+\end{document}

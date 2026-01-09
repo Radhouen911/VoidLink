@@ -11,9 +11,10 @@ export const PrivacyPolicy: React.FC = () => {
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
           <button
             onClick={() => navigate("/")}
-            className="text-2xl font-bold text-white hover:text-purple-300 transition-colors"
+            className="flex items-center gap-3 hover:opacity-80 transition-opacity"
           >
-            VoidLink
+            <img src="/logo.png" alt="VoidLink" className="h-6 w-auto" />
+            <span className="text-2xl font-bold text-white">VoidLink</span>
           </button>
           <div className="flex gap-4">
             <button

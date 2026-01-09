@@ -9,7 +9,13 @@ export const Landing: React.FC = () => {
       {/* Navbar */}
       <nav className="bg-black/20 backdrop-blur-md border-b border-white/10 sticky top-0 z-10">
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-white">VoidLink</h1>
+          <button
+            onClick={() => navigate("/")}
+            className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+          >
+            <img src="/logo.png" alt="VoidLink" className="h-6 w-auto" />
+            <h1 className="text-2xl font-bold text-white">VoidLink</h1>
+          </button>
           <div className="flex gap-4">
             <button
               onClick={() => navigate("/login")}

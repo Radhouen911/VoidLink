@@ -20,11 +20,11 @@ export const Button: React.FC<ButtonProps> = ({
 
   const variantClasses = {
     primary:
-      "bg-void-accent hover:bg-void-accent/90 active:bg-void-accent/80 text-white disabled:bg-void-accent/50",
+      "btn-gradient text-white hover:opacity-90 active:opacity-80 disabled:opacity-50",
     secondary:
-      "bg-void-dark hover:bg-void-hover active:bg-void-active text-void-text border border-void-border disabled:bg-void-dark/50 disabled:text-void-text-dim",
+      "bg-white/10 backdrop-blur-sm hover:bg-white/15 active:bg-white/20 text-white border border-white/20 disabled:opacity-50",
     danger:
-      "bg-void-danger hover:bg-void-danger/90 active:bg-void-danger/80 text-white disabled:bg-void-danger/50",
+      "bg-red-500/80 hover:bg-red-500/90 active:bg-red-500 text-white disabled:opacity-50",
   };
 
   const sizeClasses = {
