@@ -868,18 +868,16 @@ export const Chat: React.FC = () => {
   }
 
   return (
-    <div className="h-screen flex flex-col relative overflow-hidden">
-      {/* Header with glass effect */}
-      <div className="glass-strong border-b border-void-purple/30 sticky top-0 z-10 shadow-2xl">
-        <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold text-gradient">VoidLink</h1>
-            <div className="flex items-center gap-2 text-sm glass-light px-3 py-1.5 rounded-full">
+    <div className="h-screen flex flex-col overflow-hidden bg-void-black">
+      {/* Header */}
+      <div className="bg-void-dark border-b border-void-border sticky top-0 z-10">
+        <div className="container mx-auto px-4 py-3 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <h1 className="text-lg font-semibold text-void-text">VoidLink</h1>
+            <div className="flex items-center gap-2 text-xs bg-void-black px-2.5 py-1 rounded-full border border-void-border">
               <div
-                className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
-                  isConnected
-                    ? "bg-void-success shadow-lg shadow-void-success/50 animate-pulse"
-                    : "bg-void-danger"
+                className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                  isConnected ? "bg-void-success" : "bg-void-danger"
                 }`}
               />
               <span className="text-void-text-dim font-medium">
@@ -887,7 +885,7 @@ export const Chat: React.FC = () => {
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <select
               value={user?.presenceStatus || "online"}
               onChange={(e) => {
@@ -899,13 +897,13 @@ export const Chat: React.FC = () => {
                 useAuthStore.getState().setPresenceStatus(status);
                 websocket.send("presence_update", { status });
               }}
-              className="px-4 py-2 glass rounded-xl text-sm focus:outline-none focus:border-void-accent/50 focus:ring-2 focus:ring-void-accent/30 cursor-pointer transition-all duration-300 hover:bg-void-purple/20"
+              className="px-3 py-1.5 bg-void-dark rounded-lg text-sm border border-void-border focus:outline-none focus:border-void-accent focus:ring-2 focus:ring-void-accent/20 cursor-pointer transition-all duration-150 hover:bg-void-hover"
             >
               <option value="online">🟢 Online</option>
               <option value="away">🟡 Away</option>
               <option value="busy">🔴 Busy</option>
             </select>
-            <span className="text-void-text-dim font-medium">
+            <span className="text-void-text-dim text-sm font-medium">
               {user?.username}
             </span>
             <Button variant="secondary" size="sm" onClick={handleLogout}>
@@ -916,10 +914,10 @@ export const Chat: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden relative">
-        {/* Contacts Sidebar with glass */}
-        <div className="w-80 glass border-r border-void-purple/30 flex flex-col shadow-2xl">
-          <div className="p-4 border-b border-void-purple">
+      <div className="flex-1 flex overflow-hidden">
+        {/* Contacts Sidebar */}
+        <div className="w-88 bg-void-dark border-r border-void-border flex flex-col">
+          <div className="p-3 border-b border-void-border">
             <div className="flex gap-2">
               <Button
                 className="flex-1"
@@ -933,6 +931,7 @@ export const Chat: React.FC = () => {
                 size="sm"
                 onClick={loadPendingRequests}
                 title="Refresh pending requests"
+                className="w-10 p-0"
               >
                 ↻
               </Button>
@@ -941,23 +940,23 @@ export const Chat: React.FC = () => {
 
           {/* Pending Requests */}
           {pendingRequests.length > 0 && (
-            <div className="border-b border-void-purple/30">
-              <div className="p-4">
-                <h3 className="text-sm font-semibold text-void-accent mb-3 flex items-center gap-2">
-                  <span className="w-2 h-2 bg-void-accent rounded-full animate-pulse"></span>
+            <div className="border-b border-void-border bg-void-black/30">
+              <div className="p-3">
+                <h3 className="text-xs font-semibold text-void-accent mb-2 flex items-center gap-2 uppercase tracking-wide">
+                  <span className="w-1.5 h-1.5 bg-void-accent rounded-full"></span>
                   Pending Requests ({pendingRequests.length})
                 </h3>
                 <div className="space-y-2">
                   {pendingRequests.map((req) => (
                     <div
                       key={req.id}
-                      className="p-4 glass-light rounded-xl border border-void-purple/30 hover:border-void-purple/50 transition-all duration-300 hover:scale-[1.02]"
+                      className="p-3 bg-void-dark rounded-lg border border-void-border hover:border-void-accent/50 transition-all duration-150"
                     >
-                      <p className="text-sm font-medium mb-2">
+                      <p className="text-sm font-medium mb-1.5 text-void-text">
                         {req.requesterUsername}
                       </p>
                       {req.message && (
-                        <p className="text-xs text-void-text-dim mb-3">
+                        <p className="text-xs text-void-text-dim mb-2 line-clamp-2">
                           "{req.message}"
                         </p>
                       )}
@@ -965,6 +964,7 @@ export const Chat: React.FC = () => {
                         <Button
                           size="sm"
                           onClick={() => handleAcceptRequest(req.id)}
+                          className="flex-1 text-xs"
                         >
                           Accept
                         </Button>
@@ -972,6 +972,7 @@ export const Chat: React.FC = () => {
                           size="sm"
                           variant="secondary"
                           onClick={() => handleRejectRequest(req.id)}
+                          className="flex-1 text-xs"
                         >
                           Reject
                         </Button>
@@ -983,30 +984,41 @@ export const Chat: React.FC = () => {
             </div>
           )}
 
-          {/* Unified Conversation List - Telegram Style */}
-          <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-void-purple/20 scrollbar-track-transparent">
-            <div className="px-2 pb-2 mt-2">
-              {/* Search Bar Placeholder (Visual only for now) */}
+          {/* Conversation List */}
+          <div className="flex-1 overflow-y-auto scrollbar-thin">
+            <div className="p-2">
+              {/* Search Bar */}
               <div className="mb-2 px-1">
-                <div className="bg-white/5 rounded-full px-4 py-1.5 text-sm text-void-text-dim flex items-center gap-2 border border-white/5">
-                  <span>🔍</span> <span className="opacity-50">Search...</span>
+                <div className="bg-void-black/50 rounded-lg px-3 py-2 text-sm text-void-text-dim flex items-center gap-2 border border-void-border-light">
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                  <span className="opacity-50">Search...</span>
                 </div>
               </div>
 
               {(() => {
-                // 1. Merge Contacts and Active Conversations
+                // Merge Contacts and Active Conversations
                 const uniqueUsers = new Set<string>();
                 contacts.forEach((c) => uniqueUsers.add(c.username));
                 Array.from(conversations.keys()).forEach((u) =>
                   uniqueUsers.add(u)
                 );
 
-                // 2. Create display objects
                 const displayList = Array.from(uniqueUsers).map((username) => {
                   const contact = contacts.find((c) => c.username === username);
                   const conversation = conversations.get(username);
                   const lastMsg = conversation?.lastMessage;
-                  // Fallback for sorting: last message time -> contact added time -> 0
                   const sortTime = lastMsg?.createdAt
                     ? new Date(lastMsg.createdAt).getTime()
                     : contact?.addedAt
@@ -1015,65 +1027,66 @@ export const Chat: React.FC = () => {
 
                   return {
                     username,
-                    displayName: contact?.username || username, // Alias removed
+                    displayName: contact?.username || username,
                     lastMessage: lastMsg,
                     unreadCount: conversation?.unreadCount || 0,
                     isOnline:
-                      contact?.isOnline || conversation?.isOnline || false, // Use isOnline directly
+                      contact?.isOnline || conversation?.isOnline || false,
                     isTyping: conversation?.isTyping || false,
                     sortTime,
                   };
                 });
 
-                // 3. Sort by recent activity descending
                 displayList.sort((a, b) => b.sortTime - a.sortTime);
 
                 if (displayList.length === 0) {
                   return (
-                    <p className="text-sm text-void-text-dim text-center py-8">
-                      No conversations yet.
-                      <br />
-                      Add a contact to start!
-                    </p>
+                    <div className="text-center py-12 px-4">
+                      <div className="text-void-text-dim text-sm">
+                        <p className="mb-1">No conversations yet</p>
+                        <p className="text-xs">
+                          Add a contact to start chatting
+                        </p>
+                      </div>
+                    </div>
                   );
                 }
 
                 return (
-                  <div className="space-y-[2px]">
+                  <div className="space-y-0.5">
                     {displayList.map((chat) => (
                       <button
                         key={chat.username}
                         onClick={() => setActiveConversation(chat.username)}
-                        className={`w-full p-2.5 rounded-lg text-left transition-colors duration-200 group ${
+                        className={`w-full p-2.5 rounded-lg text-left transition-all duration-150 group ${
                           activeConversation === chat.username
                             ? "bg-void-accent text-white"
-                            : "hover:bg-white/5 text-void-text-primary"
+                            : "hover:bg-void-hover text-void-text"
                         }`}
                       >
                         <div className="flex items-center gap-3">
                           <div className="relative shrink-0">
                             <div
-                              className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold border border-white/5
-                              ${
+                              className={`w-11 h-11 rounded-full flex items-center justify-center text-base font-semibold ${
                                 activeConversation === chat.username
                                   ? "bg-white/20 text-white"
-                                  : "bg-gradient-to-br from-void-purple/20 to-void-accent/20 text-void-text-primary"
+                                  : "bg-void-black text-void-text"
                               }`}
                             >
                               {chat.displayName.charAt(0).toUpperCase()}
                             </div>
                             {chat.isOnline && (
-                              <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full border-[3px] border-void-black"></div>
+                              <div className="absolute bottom-0 right-0 w-3 h-3 bg-void-success rounded-full border-2 border-void-dark"></div>
                             )}
                           </div>
 
                           <div className="flex-1 min-w-0">
                             <div className="flex justify-between items-baseline mb-0.5">
                               <h4
-                                className={`font-semibold truncate text-[15px] ${
+                                className={`font-medium truncate text-sm ${
                                   activeConversation === chat.username
                                     ? "text-white"
-                                    : "text-void-text-primary"
+                                    : "text-void-text"
                                 }`}
                               >
                                 {chat.displayName}
@@ -1096,24 +1109,16 @@ export const Chat: React.FC = () => {
                               )}
                             </div>
 
-                            <div className="flex justify-between items-center h-5">
+                            <div className="flex justify-between items-center">
                               <p
-                                className={`text-sm truncate pr-2 ${
+                                className={`text-xs truncate pr-2 ${
                                   activeConversation === chat.username
                                     ? "text-white/80"
                                     : "text-void-text-dim"
                                 }`}
                               >
                                 {chat.isTyping ? (
-                                  <span
-                                    className={
-                                      activeConversation === chat.username
-                                        ? "text-white animate-pulse"
-                                        : "text-void-accent animate-pulse"
-                                    }
-                                  >
-                                    typing...
-                                  </span>
+                                  <span className="italic">typing...</span>
                                 ) : (
                                   chat.lastMessage?.decryptedContent ||
                                   "Start a conversation"
@@ -1121,13 +1126,15 @@ export const Chat: React.FC = () => {
                               </p>
                               {chat.unreadCount > 0 && (
                                 <span
-                                  className={`min-w-[1.25rem] h-5 px-1.5 rounded-full font-bold text-xs flex items-center justify-center ${
+                                  className={`min-w-[1.125rem] h-[1.125rem] px-1 rounded-full font-semibold text-[10px] flex items-center justify-center shrink-0 ${
                                     activeConversation === chat.username
                                       ? "bg-white text-void-accent"
                                       : "bg-void-accent text-white"
                                   }`}
                                 >
-                                  {chat.unreadCount}
+                                  {chat.unreadCount > 99
+                                    ? "99+"
+                                    : chat.unreadCount}
                                 </span>
                               )}
                             </div>
@@ -1143,21 +1150,21 @@ export const Chat: React.FC = () => {
         </div>
 
         {/* Chat Area */}
-        <div className="flex-1 flex flex-col relative">
+        <div className="flex-1 flex flex-col bg-void-black">
           {activeConversation ? (
             <>
-              {/* Chat Header with glass */}
-              <div className="p-4 border-b border-void-purple/30 glass-strong shadow-lg">
+              {/* Chat Header */}
+              <div className="px-4 py-3 border-b border-void-border bg-void-dark">
                 <div className="flex items-center gap-3">
                   <div
-                    className={`w-3 h-3 rounded-full ${
+                    className={`w-2.5 h-2.5 rounded-full ${
                       contacts.find((c) => c.username === activeConversation)
                         ?.isOnline
-                        ? "bg-void-success shadow-lg shadow-void-success/50 animate-pulse"
-                        : "bg-gray-500"
+                        ? "bg-void-success"
+                        : "bg-void-text-dim"
                     }`}
                   />
-                  <h2 className="text-xl font-semibold">
+                  <h2 className="text-base font-semibold text-void-text">
                     {activeConversation}
                   </h2>
                 </div>
@@ -1166,8 +1173,8 @@ export const Chat: React.FC = () => {
               {/* Messages */}
               <div
                 ref={messagesContainerRef}
-                onScroll={handleScroll}
-                className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-hide"
+                onScroll={handleScrollEvents}
+                className="flex-1 overflow-y-auto p-4 space-y-1 scrollbar-thin"
               >
                 {isLoadingMore && (
                   <div className="text-center py-2">
@@ -1177,10 +1184,28 @@ export const Chat: React.FC = () => {
                   </div>
                 )}
                 {!activeConv || activeConv.messages.length === 0 ? (
-                  <div className="text-center py-12">
-                    <div className="glass-light rounded-2xl p-8 inline-block">
-                      <p className="text-void-text-dim">
-                        No messages yet. Start the conversation!
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center">
+                      <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-void-dark flex items-center justify-center">
+                        <svg
+                          className="w-8 h-8 text-void-text-dim"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                          />
+                        </svg>
+                      </div>
+                      <p className="text-void-text-dim text-sm">
+                        No messages yet
+                      </p>
+                      <p className="text-void-text-secondary text-xs mt-1">
+                        Start the conversation!
                       </p>
                     </div>
                   </div>
@@ -1228,13 +1253,10 @@ export const Chat: React.FC = () => {
                         ).toDateString() !== messageDate;
 
                       return (
-                        <div
-                          key={msg.id}
-                          className="flex flex-col animate-fade-in"
-                        >
+                        <div key={msg.id} className="flex flex-col">
                           {isNewDay && (
-                            <div className="flex justify-center my-4 sticky top-0 z-10">
-                              <span className="bg-void-black/60 backdrop-blur-md text-void-text-dim text-xs px-3 py-1 rounded-full border border-void-purple/20 shadow-sm">
+                            <div className="flex justify-center my-3 sticky top-0 z-10">
+                              <span className="bg-void-dark/90 text-void-text-dim text-xs px-3 py-1 rounded-full border border-void-border">
                                 {dateLabel}
                               </span>
                             </div>
@@ -1246,30 +1268,30 @@ export const Chat: React.FC = () => {
                             } ${isFirstInGroup ? "mt-2" : "mt-0.5"}`}
                           >
                             <div
-                              className={`max-w-[75%] md:max-w-md px-4 py-2 shadow-sm relative group ${
+                              className={`max-w-[70%] md:max-w-md px-3 py-2 relative group ${
                                 isMe
                                   ? `bg-void-accent text-white ${
                                       isFirstInGroup
                                         ? "rounded-tr-2xl rounded-tl-2xl"
-                                        : "rounded-tr-md rounded-tl-2xl"
+                                        : "rounded-tr-sm rounded-tl-2xl"
                                     } ${
                                       isLastInGroup
                                         ? "rounded-br-2xl rounded-bl-2xl"
-                                        : "rounded-br-md rounded-bl-2xl"
+                                        : "rounded-br-sm rounded-bl-2xl"
                                     }`
-                                  : `glass-light ${
+                                  : `bg-void-dark text-void-text ${
                                       isFirstInGroup
                                         ? "rounded-tl-2xl rounded-tr-2xl"
-                                        : "rounded-tl-md rounded-tr-2xl"
+                                        : "rounded-tl-sm rounded-tr-2xl"
                                     } ${
                                       isLastInGroup
                                         ? "rounded-bl-2xl rounded-br-2xl"
-                                        : "rounded-bl-md rounded-br-2xl"
+                                        : "rounded-bl-sm rounded-br-2xl"
                                     }`
                               }`}
                             >
                               {!isMe && isFirstInGroup && (
-                                <p className="text-xs font-bold text-void-accent mb-1 opacity-80">
+                                <p className="text-xs font-semibold text-void-accent mb-1">
                                   {msg.senderUsername}
                                 </p>
                               )}
@@ -1277,10 +1299,8 @@ export const Chat: React.FC = () => {
                                 {msg.decryptedContent || "[Encrypted]"}
                               </p>
                               <div
-                                className={`flex items-center justify-end gap-1.5 mt-1 select-none ${
-                                  isMe
-                                    ? "text-void-white/70"
-                                    : "text-void-text-dim/70"
+                                className={`flex items-center justify-end gap-1 mt-1 select-none ${
+                                  isMe ? "text-white/60" : "text-void-text-dim"
                                 }`}
                               >
                                 <span className="text-[10px]">
@@ -1293,13 +1313,10 @@ export const Chat: React.FC = () => {
                                   <span
                                     className={`text-[10px] ${
                                       msg.status === "failed"
-                                        ? "cursor-pointer hover:scale-110 transition-transform"
-                                        : ""
-                                    } ${
-                                      // Color coding for delivery status
-                                      msg.read || msg.delivered
-                                        ? "text-blue-400"
-                                        : "text-void-white/50"
+                                        ? "cursor-pointer hover:scale-110 transition-transform text-void-danger"
+                                        : msg.read || msg.delivered
+                                        ? "text-white/80"
+                                        : "text-white/50"
                                     }`}
                                     onClick={(e) => {
                                       if (msg.status === "failed") {
@@ -1320,9 +1337,9 @@ export const Chat: React.FC = () => {
                                     }
                                   >
                                     {msg.status === "failed"
-                                      ? "❌"
+                                      ? "✕"
                                       : msg.status === "sending"
-                                      ? "🕒"
+                                      ? "○"
                                       : msg.read
                                       ? "✓✓"
                                       : msg.delivered
@@ -1342,35 +1359,32 @@ export const Chat: React.FC = () => {
 
                 {/* Typing Indicator */}
                 {activeConv?.isTyping && (
-                  <div className="flex justify-start px-4 animate-fade-in">
-                    <div className="glass-light rounded-2xl px-4 py-3 border border-void-purple/30">
+                  <div className="flex justify-start animate-fade-in">
+                    <div className="bg-void-dark rounded-2xl px-4 py-2.5 border border-void-border">
                       <div className="flex items-center gap-2">
                         <div className="flex gap-1">
                           <div
-                            className="w-2 h-2 bg-void-accent rounded-full animate-bounce"
+                            className="w-2 h-2 bg-void-text-dim rounded-full animate-bounce"
                             style={{ animationDelay: "0ms" }}
                           ></div>
                           <div
-                            className="w-2 h-2 bg-void-accent rounded-full animate-bounce"
+                            className="w-2 h-2 bg-void-text-dim rounded-full animate-bounce"
                             style={{ animationDelay: "150ms" }}
                           ></div>
                           <div
-                            className="w-2 h-2 bg-void-accent rounded-full animate-bounce"
+                            className="w-2 h-2 bg-void-text-dim rounded-full animate-bounce"
                             style={{ animationDelay: "300ms" }}
                           ></div>
                         </div>
-                        <span className="text-xs text-void-text-dim">
-                          typing...
-                        </span>
                       </div>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Message Input with glass */}
-              <div className="p-6 border-t border-void-purple/30 glass-strong">
-                <div className="flex gap-3">
+              {/* Message Input */}
+              <div className="p-4 border-t border-void-border bg-void-dark">
+                <div className="flex gap-2">
                   <input
                     type="text"
                     value={messageInput}
@@ -1382,26 +1396,55 @@ export const Chat: React.FC = () => {
                       }
                     }}
                     placeholder="Type a message..."
-                    className="flex-1 px-5 py-3 glass rounded-xl focus:outline-none focus:border-void-accent/50 focus:ring-2 focus:ring-void-accent/30 transition-all duration-300"
+                    className="flex-1 px-4 py-2.5 bg-void-black border border-void-border rounded-lg text-void-text placeholder-void-text-dim focus:outline-none focus:border-void-accent focus:ring-2 focus:ring-void-accent/20 transition-all duration-150"
+                    disabled={isContactsLoading}
                   />
                   <Button
                     onClick={handleSendMessage}
-                    className="px-8"
-                    disabled={isContactsLoading}
+                    disabled={isContactsLoading || !messageInput.trim()}
+                    className="px-6"
                   >
-                    {isContactsLoading ? "Loading..." : "Send"}
+                    {isContactsLoading ? "..." : "Send"}
                   </Button>
                 </div>
               </div>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-center glass-light rounded-2xl p-12 animate-fade-in">
-                <p className="text-void-text-dim text-lg mb-2">
+            <div className="flex-1 flex items-center justify-center bg-void-black">
+              <div className="text-center">
+                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-void-dark flex items-center justify-center">
+                  <svg
+                    className="w-10 h-10 text-void-text-dim"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                    />
+                  </svg>
+                </div>
+                <p className="text-void-text text-base mb-1">
                   Select a contact to start chatting
                 </p>
-                <p className="text-void-text-dim text-sm">
-                  Your messages are end-to-end encrypted 🔒
+                <p className="text-void-text-dim text-sm flex items-center justify-center gap-1">
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                    />
+                  </svg>
+                  End-to-end encrypted
                 </p>
               </div>
             </div>
@@ -1409,36 +1452,40 @@ export const Chat: React.FC = () => {
         </div>
       </div>
 
-      {/* Add Contact Modal with glass */}
+      {/* Add Contact Modal */}
       {showAddContact && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 animate-fade-in">
-          <div className="card max-w-md w-full mx-4 p-8 animate-fade-in">
-            <h2 className="text-2xl font-bold mb-6 text-gradient">
-              Add Contact
-            </h2>
-            <Input
-              label="Username"
-              value={searchUsername}
-              onChange={(e) => setSearchUsername(e.target.value)}
-              placeholder="Enter username"
-            />
-            <Input
-              label="Message (optional)"
-              value={contactMessage}
-              onChange={(e) => setContactMessage(e.target.value)}
-              placeholder="Hi! Let's connect..."
-            />
-            <div className="flex gap-3 mt-6">
-              <Button onClick={handleAddContact} className="flex-1">
-                Send Request
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={() => setShowAddContact(false)}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 animate-fade-in">
+          <div className="bg-void-dark border border-void-border rounded-xl max-w-md w-full mx-4 animate-fade-in">
+            <div className="px-6 py-4 border-b border-void-border">
+              <h2 className="text-lg font-semibold text-void-text">
+                Add Contact
+              </h2>
+            </div>
+            <div className="p-6">
+              <Input
+                label="Username"
+                value={searchUsername}
+                onChange={(e) => setSearchUsername(e.target.value)}
+                placeholder="Enter username"
+              />
+              <Input
+                label="Message (optional)"
+                value={contactMessage}
+                onChange={(e) => setContactMessage(e.target.value)}
+                placeholder="Hi! Let's connect..."
+              />
+              <div className="flex gap-3 mt-2">
+                <Button onClick={handleAddContact} className="flex-1">
+                  Send Request
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => setShowAddContact(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
             </div>
           </div>
         </div>

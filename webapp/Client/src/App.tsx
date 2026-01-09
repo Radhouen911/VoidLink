@@ -7,6 +7,7 @@ import { Chat } from "./pages/Chat";
 import { Landing } from "./pages/Landing";
 import { Login } from "./pages/Login";
 import { NotFound } from "./pages/NotFound";
+import { PrivacyPolicy } from "./pages/PrivacyPolicy";
 import { Register } from "./pages/Register";
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
@@ -31,6 +32,7 @@ const AppRoutes: React.FC = () => {
       <Route path="/" element={<Landing />} />
       <Route path="/register" element={<Register />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route
         path="/chat"
         element={
