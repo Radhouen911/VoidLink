@@ -94,7 +94,7 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "failed",
-                      "duration": 3145,
+                      "duration": 3105,
                       "error": {
                         "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/\", waiting until \"load\"\u001b[22m\n",
                         "stack": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/\", waiting until \"load\"\u001b[22m\n\n    at C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\00-simple-test.spec.ts:6:16",
@@ -118,7 +118,7 @@
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-01-05T16:52:44.552Z",
+                      "startTime": "2026-01-09T15:15:27.144Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -130,11 +130,6 @@
                           "name": "video",
                           "contentType": "video/webm",
                           "path": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\test-results\\00-simple-test-Simple-Smok-fe614-hould-load-the-landing-page-chromium\\video.webm"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\test-results\\00-simple-test-Simple-Smok-fe614-hould-load-the-landing-page-chromium\\error-context.md"
                         }
                       ],
                       "errorLocation": {
@@ -154,7 +149,7 @@
             },
             {
               "title": "should navigate to register page",
-              "ok": false,
+              "ok": true,
               "tags": [],
               "tests": [
                 {
@@ -167,11 +162,11 @@
                     {
                       "workerIndex": 1,
                       "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 3203,
+                      "status": "interrupted",
+                      "duration": 865,
                       "error": {
-                        "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/\", waiting until \"load\"\u001b[22m\n",
-                        "stack": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/\", waiting until \"load\"\u001b[22m\n\n    at C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\00-simple-test.spec.ts:15:16",
+                        "message": "Error: page.goto: net::ERR_ABORTED at http://localhost:5173/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/\", waiting until \"load\"\u001b[22m\n",
+                        "stack": "Error: page.goto: net::ERR_ABORTED at http://localhost:5173/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/\", waiting until \"load\"\u001b[22m\n\n    at C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\00-simple-test.spec.ts:15:16",
                         "location": {
                           "file": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\00-simple-test.spec.ts",
                           "column": 16,
@@ -186,31 +181,18 @@
                             "column": 16,
                             "line": 15
                           },
-                          "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/\", waiting until \"load\"\u001b[22m\n\n\n\u001b[0m \u001b[90m 13 |\u001b[39m\n \u001b[90m 14 |\u001b[39m   test(\u001b[32m\"should navigate to register page\"\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[32m\"/\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 16 |\u001b[39m\n \u001b[90m 17 |\u001b[39m     \u001b[90m// Click Get Started\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mclick(\u001b[32m\"text=Get Started\"\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\00-simple-test.spec.ts:15:16\u001b[22m"
+                          "message": "Error: page.goto: net::ERR_ABORTED at http://localhost:5173/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/\", waiting until \"load\"\u001b[22m\n\n\n\u001b[0m \u001b[90m 13 |\u001b[39m\n \u001b[90m 14 |\u001b[39m   test(\u001b[32m\"should navigate to register page\"\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 15 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[32m\"/\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 16 |\u001b[39m\n \u001b[90m 17 |\u001b[39m     \u001b[90m// Click Get Started\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mclick(\u001b[32m\"text=Get Started\"\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\00-simple-test.spec.ts:15:16\u001b[22m"
+                        },
+                        {
+                          "message": "Error: browserContext.close: Target page, context or browser has been closed"
                         }
                       ],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-01-05T16:52:49.202Z",
+                      "startTime": "2026-01-09T15:15:33.429Z",
                       "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\test-results\\00-simple-test-Simple-Smok-60a87-d-navigate-to-register-page-chromium\\test-failed-1.png"
-                        },
-                        {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\test-results\\00-simple-test-Simple-Smok-60a87-d-navigate-to-register-page-chromium\\video.webm"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\test-results\\00-simple-test-Simple-Smok-60a87-d-navigate-to-register-page-chromium\\error-context.md"
-                        }
-                      ],
+                      "attachments": [],
                       "errorLocation": {
                         "file": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\00-simple-test.spec.ts",
                         "column": 16,
@@ -218,7 +200,7 @@
                       }
                     }
                   ],
-                  "status": "unexpected"
+                  "status": "skipped"
                 }
               ],
               "id": "af0f59675dac0c9862d3-51f6a86e426d3b915233",
@@ -228,7 +210,7 @@
             },
             {
               "title": "should show all register form fields",
-              "ok": false,
+              "ok": true,
               "tags": [],
               "tests": [
                 {
@@ -237,62 +219,8 @@
                   "expectedStatus": "passed",
                   "projectId": "chromium",
                   "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 2,
-                      "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 3158,
-                      "error": {
-                        "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/register\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/register\", waiting until \"load\"\u001b[22m\n",
-                        "stack": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/register\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/register\", waiting until \"load\"\u001b[22m\n\n    at C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\00-simple-test.spec.ts:30:16",
-                        "location": {
-                          "file": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\00-simple-test.spec.ts",
-                          "column": 16,
-                          "line": 30
-                        },
-                        "snippet": "\u001b[0m \u001b[90m 28 |\u001b[39m\n \u001b[90m 29 |\u001b[39m   test(\u001b[32m\"should show all register form fields\"\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 30 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[32m\"/register\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 31 |\u001b[39m\n \u001b[90m 32 |\u001b[39m     \u001b[90m// Check all fields exist\u001b[39m\n \u001b[90m 33 |\u001b[39m     \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mlocator(\u001b[32m'input[name=\"username\"]'\u001b[39m))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\u001b[0m"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\00-simple-test.spec.ts",
-                            "column": 16,
-                            "line": 30
-                          },
-                          "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/register\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/register\", waiting until \"load\"\u001b[22m\n\n\n\u001b[0m \u001b[90m 28 |\u001b[39m\n \u001b[90m 29 |\u001b[39m   test(\u001b[32m\"should show all register form fields\"\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 30 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[32m\"/register\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 31 |\u001b[39m\n \u001b[90m 32 |\u001b[39m     \u001b[90m// Check all fields exist\u001b[39m\n \u001b[90m 33 |\u001b[39m     \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mlocator(\u001b[32m'input[name=\"username\"]'\u001b[39m))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\00-simple-test.spec.ts:30:16\u001b[22m"
-                        }
-                      ],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-05T16:52:53.837Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\test-results\\00-simple-test-Simple-Smok-cbb84-ow-all-register-form-fields-chromium\\test-failed-1.png"
-                        },
-                        {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\test-results\\00-simple-test-Simple-Smok-cbb84-ow-all-register-form-fields-chromium\\video.webm"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\test-results\\00-simple-test-Simple-Smok-cbb84-ow-all-register-form-fields-chromium\\error-context.md"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\00-simple-test.spec.ts",
-                        "column": 16,
-                        "line": 30
-                      }
-                    }
-                  ],
-                  "status": "unexpected"
+                  "results": [],
+                  "status": "skipped"
                 }
               ],
               "id": "af0f59675dac0c9862d3-50c043e7fc8b05827566",
@@ -302,7 +230,7 @@
             },
             {
               "title": "should be able to fill register form",
-              "ok": false,
+              "ok": true,
               "tags": [],
               "tests": [
                 {
@@ -311,62 +239,8 @@
                   "expectedStatus": "passed",
                   "projectId": "chromium",
                   "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 3,
-                      "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 3114,
-                      "error": {
-                        "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/register\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/register\", waiting until \"load\"\u001b[22m\n",
-                        "stack": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/register\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/register\", waiting until \"load\"\u001b[22m\n\n    at C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\00-simple-test.spec.ts:47:16",
-                        "location": {
-                          "file": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\00-simple-test.spec.ts",
-                          "column": 16,
-                          "line": 47
-                        },
-                        "snippet": "\u001b[0m \u001b[90m 45 |\u001b[39m\n \u001b[90m 46 |\u001b[39m   test(\u001b[32m\"should be able to fill register form\"\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 47 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[32m\"/register\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 48 |\u001b[39m\n \u001b[90m 49 |\u001b[39m     \u001b[36mconst\u001b[39m testUser \u001b[33m=\u001b[39m {\n \u001b[90m 50 |\u001b[39m       username\u001b[33m:\u001b[39m \u001b[32m`test_${Date.now()}`\u001b[39m\u001b[33m,\u001b[39m\u001b[0m"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\00-simple-test.spec.ts",
-                            "column": 16,
-                            "line": 47
-                          },
-                          "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/register\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/register\", waiting until \"load\"\u001b[22m\n\n\n\u001b[0m \u001b[90m 45 |\u001b[39m\n \u001b[90m 46 |\u001b[39m   test(\u001b[32m\"should be able to fill register form\"\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 47 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[32m\"/register\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 48 |\u001b[39m\n \u001b[90m 49 |\u001b[39m     \u001b[36mconst\u001b[39m testUser \u001b[33m=\u001b[39m {\n \u001b[90m 50 |\u001b[39m       username\u001b[33m:\u001b[39m \u001b[32m`test_${Date.now()}`\u001b[39m\u001b[33m,\u001b[39m\u001b[0m\n\u001b[2m    at C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\00-simple-test.spec.ts:47:16\u001b[22m"
-                        }
-                      ],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-05T16:52:58.471Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\test-results\\00-simple-test-Simple-Smok-71473--able-to-fill-register-form-chromium\\test-failed-1.png"
-                        },
-                        {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\test-results\\00-simple-test-Simple-Smok-71473--able-to-fill-register-form-chromium\\video.webm"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\test-results\\00-simple-test-Simple-Smok-71473--able-to-fill-register-form-chromium\\error-context.md"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\00-simple-test.spec.ts",
-                        "column": 16,
-                        "line": 47
-                      }
-                    }
-                  ],
-                  "status": "unexpected"
+                  "results": [],
+                  "status": "skipped"
                 }
               ],
               "id": "af0f59675dac0c9862d3-e876abccf50f3c24da9c",
@@ -393,7 +267,7 @@
           "specs": [
             {
               "title": "should register a new user and login",
-              "ok": false,
+              "ok": true,
               "tags": [],
               "tests": [
                 {
@@ -402,56 +276,8 @@
                   "expectedStatus": "passed",
                   "projectId": "chromium",
                   "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 4,
-                      "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 3071,
-                      "error": {
-                        "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/\", waiting until \"load\"\u001b[22m\n",
-                        "stack": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/\", waiting until \"load\"\u001b[22m\n\n    at C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\01-registration.spec.ts:19:16",
-                        "location": {
-                          "file": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\01-registration.spec.ts",
-                          "column": 16,
-                          "line": 19
-                        },
-                        "snippet": "\u001b[0m \u001b[90m 17 |\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[90m// Navigate to landing page\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 19 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[32m\"/\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 20 |\u001b[39m\n \u001b[90m 21 |\u001b[39m     \u001b[90m// Click Get Started\u001b[39m\n \u001b[90m 22 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mclick(\u001b[32m\"text=Get Started\"\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\01-registration.spec.ts",
-                            "column": 16,
-                            "line": 19
-                          },
-                          "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/\", waiting until \"load\"\u001b[22m\n\n\n\u001b[0m \u001b[90m 17 |\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[90m// Navigate to landing page\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 19 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[32m\"/\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 20 |\u001b[39m\n \u001b[90m 21 |\u001b[39m     \u001b[90m// Click Get Started\u001b[39m\n \u001b[90m 22 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mclick(\u001b[32m\"text=Get Started\"\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\01-registration.spec.ts:19:16\u001b[22m"
-                        }
-                      ],
-                      "stdout": [
-                        {
-                          "text": "Starting registration...\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-05T16:53:03.067Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\test-results\\01-registration-User-Regis-8632b-gister-a-new-user-and-login-chromium\\video.webm"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\01-registration.spec.ts",
-                        "column": 16,
-                        "line": 19
-                      }
-                    }
-                  ],
-                  "status": "unexpected"
+                  "results": [],
+                  "status": "skipped"
                 }
               ],
               "id": "180cc0718174fb543e11-46aff3b805026a7b6d27",
@@ -461,7 +287,7 @@
             },
             {
               "title": "should not allow duplicate username",
-              "ok": false,
+              "ok": true,
               "tags": [],
               "tests": [
                 {
@@ -470,62 +296,8 @@
                   "expectedStatus": "passed",
                   "projectId": "chromium",
                   "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 5,
-                      "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 3106,
-                      "error": {
-                        "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/register\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/register\", waiting until \"load\"\u001b[22m\n",
-                        "stack": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/register\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/register\", waiting until \"load\"\u001b[22m\n\n    at C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\01-registration.spec.ts:92:16",
-                        "location": {
-                          "file": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\01-registration.spec.ts",
-                          "column": 16,
-                          "line": 92
-                        },
-                        "snippet": "\u001b[0m \u001b[90m 90 |\u001b[39m\n \u001b[90m 91 |\u001b[39m   test(\u001b[32m\"should not allow duplicate username\"\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 92 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[32m\"/register\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 93 |\u001b[39m\n \u001b[90m 94 |\u001b[39m     \u001b[90m// Try to register with same username\u001b[39m\n \u001b[90m 95 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mfill(\u001b[32m'input[name=\"username\"]'\u001b[39m\u001b[33m,\u001b[39m testUser\u001b[33m.\u001b[39musername)\u001b[33m;\u001b[39m\u001b[0m"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\01-registration.spec.ts",
-                            "column": 16,
-                            "line": 92
-                          },
-                          "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/register\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/register\", waiting until \"load\"\u001b[22m\n\n\n\u001b[0m \u001b[90m 90 |\u001b[39m\n \u001b[90m 91 |\u001b[39m   test(\u001b[32m\"should not allow duplicate username\"\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 92 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[32m\"/register\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 93 |\u001b[39m\n \u001b[90m 94 |\u001b[39m     \u001b[90m// Try to register with same username\u001b[39m\n \u001b[90m 95 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mfill(\u001b[32m'input[name=\"username\"]'\u001b[39m\u001b[33m,\u001b[39m testUser\u001b[33m.\u001b[39musername)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\01-registration.spec.ts:92:16\u001b[22m"
-                        }
-                      ],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-05T16:53:07.673Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\test-results\\01-registration-User-Regis-97b08-ot-allow-duplicate-username-chromium\\test-failed-1.png"
-                        },
-                        {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\test-results\\01-registration-User-Regis-97b08-ot-allow-duplicate-username-chromium\\video.webm"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\test-results\\01-registration-User-Regis-97b08-ot-allow-duplicate-username-chromium\\error-context.md"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\01-registration.spec.ts",
-                        "column": 16,
-                        "line": 92
-                      }
-                    }
-                  ],
-                  "status": "unexpected"
+                  "results": [],
+                  "status": "skipped"
                 }
               ],
               "id": "180cc0718174fb543e11-67d56778d1ff4468333e",
@@ -535,7 +307,7 @@
             },
             {
               "title": "should validate password strength",
-              "ok": false,
+              "ok": true,
               "tags": [],
               "tests": [
                 {
@@ -544,62 +316,8 @@
                   "expectedStatus": "passed",
                   "projectId": "chromium",
                   "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 6,
-                      "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 3679,
-                      "error": {
-                        "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/register\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/register\", waiting until \"load\"\u001b[22m\n",
-                        "stack": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/register\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/register\", waiting until \"load\"\u001b[22m\n\n    at C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\01-registration.spec.ts:111:16",
-                        "location": {
-                          "file": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\01-registration.spec.ts",
-                          "column": 16,
-                          "line": 111
-                        },
-                        "snippet": "\u001b[0m \u001b[90m 109 |\u001b[39m\n \u001b[90m 110 |\u001b[39m   test(\u001b[32m\"should validate password strength\"\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 111 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[32m\"/register\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 112 |\u001b[39m\n \u001b[90m 113 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mfill(\u001b[32m'input[name=\"username\"]'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m`user_${Date.now()}`\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 114 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mfill(\u001b[32m'input[name=\"password\"]'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m\"123\"\u001b[39m)\u001b[33m;\u001b[39m \u001b[90m// Weak password\u001b[39m\u001b[0m"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\01-registration.spec.ts",
-                            "column": 16,
-                            "line": 111
-                          },
-                          "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/register\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/register\", waiting until \"load\"\u001b[22m\n\n\n\u001b[0m \u001b[90m 109 |\u001b[39m\n \u001b[90m 110 |\u001b[39m   test(\u001b[32m\"should validate password strength\"\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 111 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[32m\"/register\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 112 |\u001b[39m\n \u001b[90m 113 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mfill(\u001b[32m'input[name=\"username\"]'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m`user_${Date.now()}`\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 114 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mfill(\u001b[32m'input[name=\"password\"]'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m\"123\"\u001b[39m)\u001b[33m;\u001b[39m \u001b[90m// Weak password\u001b[39m\u001b[0m\n\u001b[2m    at C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\01-registration.spec.ts:111:16\u001b[22m"
-                        }
-                      ],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-05T16:53:13.877Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\test-results\\01-registration-User-Regis-cebf1--validate-password-strength-chromium\\test-failed-1.png"
-                        },
-                        {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\test-results\\01-registration-User-Regis-cebf1--validate-password-strength-chromium\\video.webm"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\test-results\\01-registration-User-Regis-cebf1--validate-password-strength-chromium\\error-context.md"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\01-registration.spec.ts",
-                        "column": 16,
-                        "line": 111
-                      }
-                    }
-                  ],
-                  "status": "unexpected"
+                  "results": [],
+                  "status": "skipped"
                 }
               ],
               "id": "180cc0718174fb543e11-67b6843660e9a0c54631",
@@ -626,7 +344,7 @@
           "specs": [
             {
               "title": "should login with correct credentials",
-              "ok": false,
+              "ok": true,
               "tags": [],
               "tests": [
                 {
@@ -635,57 +353,8 @@
                   "expectedStatus": "passed",
                   "projectId": "chromium",
                   "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 7,
-                      "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 1,
-                      "error": {
-                        "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/\", waiting until \"load\"\u001b[22m\n",
-                        "stack": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/\", waiting until \"load\"\u001b[22m\n\n    at C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\02-login.spec.ts:10:16",
-                        "location": {
-                          "file": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\02-login.spec.ts",
-                          "column": 16,
-                          "line": 10
-                        },
-                        "snippet": "\u001b[0m \u001b[90m  8 |\u001b[39m     \u001b[36mconst\u001b[39m context \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m browser\u001b[33m.\u001b[39mnewContext()\u001b[33m;\u001b[39m\n \u001b[90m  9 |\u001b[39m     \u001b[36mconst\u001b[39m page \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m context\u001b[33m.\u001b[39mnewPage()\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 10 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[32m\"/\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 11 |\u001b[39m\n \u001b[90m 12 |\u001b[39m     testUser \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mevaluate(() \u001b[33m=>\u001b[39m {\n \u001b[90m 13 |\u001b[39m       \u001b[36mreturn\u001b[39m \u001b[33mJSON\u001b[39m\u001b[33m.\u001b[39mparse(window\u001b[33m.\u001b[39mlocalStorage\u001b[33m.\u001b[39mgetItem(\u001b[32m\"test_user_1\"\u001b[39m) \u001b[33m||\u001b[39m \u001b[32m\"{}\"\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\02-login.spec.ts",
-                            "column": 16,
-                            "line": 10
-                          },
-                          "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/\", waiting until \"load\"\u001b[22m\n\n\n\u001b[0m \u001b[90m  8 |\u001b[39m     \u001b[36mconst\u001b[39m context \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m browser\u001b[33m.\u001b[39mnewContext()\u001b[33m;\u001b[39m\n \u001b[90m  9 |\u001b[39m     \u001b[36mconst\u001b[39m page \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m context\u001b[33m.\u001b[39mnewPage()\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 10 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[32m\"/\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 11 |\u001b[39m\n \u001b[90m 12 |\u001b[39m     testUser \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mevaluate(() \u001b[33m=>\u001b[39m {\n \u001b[90m 13 |\u001b[39m       \u001b[36mreturn\u001b[39m \u001b[33mJSON\u001b[39m\u001b[33m.\u001b[39mparse(window\u001b[33m.\u001b[39mlocalStorage\u001b[33m.\u001b[39mgetItem(\u001b[32m\"test_user_1\"\u001b[39m) \u001b[33m||\u001b[39m \u001b[32m\"{}\"\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\02-login.spec.ts:10:16\u001b[22m"
-                        }
-                      ],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-05T16:53:20.915Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\test-results\\02-login-User-Login-should-login-with-correct-credentials-chromium\\test-failed-1.png"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\test-results\\02-login-User-Login-should-login-with-correct-credentials-chromium\\error-context.md"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\02-login.spec.ts",
-                        "column": 16,
-                        "line": 10
-                      }
-                    }
-                  ],
-                  "status": "unexpected"
+                  "results": [],
+                  "status": "skipped"
                 }
               ],
               "id": "310bb98f1cabca9bd5d3-1fdf08daa03f8c7c1f21",
@@ -704,21 +373,7 @@
                   "expectedStatus": "passed",
                   "projectId": "chromium",
                   "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": -1,
-                      "parallelIndex": -1,
-                      "status": "skipped",
-                      "duration": 0,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-05T16:53:24.910Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
+                  "results": [],
                   "status": "skipped"
                 }
               ],
@@ -738,21 +393,7 @@
                   "expectedStatus": "passed",
                   "projectId": "chromium",
                   "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": -1,
-                      "parallelIndex": -1,
-                      "status": "skipped",
-                      "duration": 0,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-05T16:53:24.912Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
+                  "results": [],
                   "status": "skipped"
                 }
               ],
@@ -772,21 +413,7 @@
                   "expectedStatus": "passed",
                   "projectId": "chromium",
                   "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": -1,
-                      "parallelIndex": -1,
-                      "status": "skipped",
-                      "duration": 0,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-05T16:53:24.915Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
+                  "results": [],
                   "status": "skipped"
                 }
               ],
@@ -823,56 +450,7 @@
                   "expectedStatus": "passed",
                   "projectId": "chromium",
                   "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 8,
-                      "parallelIndex": 0,
-                      "status": "interrupted",
-                      "duration": 2936,
-                      "error": {
-                        "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/register\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/register\", waiting until \"load\"\u001b[22m\n",
-                        "stack": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/register\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/register\", waiting until \"load\"\u001b[22m\n\n    at C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\03-contacts.spec.ts:22:17",
-                        "location": {
-                          "file": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\03-contacts.spec.ts",
-                          "column": 17,
-                          "line": 22
-                        },
-                        "snippet": "\u001b[0m \u001b[90m 20 |\u001b[39m     \u001b[36mconst\u001b[39m page1 \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m context1\u001b[33m.\u001b[39mnewPage()\u001b[33m;\u001b[39m\n \u001b[90m 21 |\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 22 |\u001b[39m     \u001b[36mawait\u001b[39m page1\u001b[33m.\u001b[39mgoto(\u001b[32m\"/register\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                 \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 23 |\u001b[39m     \u001b[36mawait\u001b[39m page1\u001b[33m.\u001b[39mfill(\n \u001b[90m 24 |\u001b[39m       \u001b[32m'input[name=\"username\"], input[placeholder*=\"username\" i]'\u001b[39m\u001b[33m,\u001b[39m\n \u001b[90m 25 |\u001b[39m       user1\u001b[33m.\u001b[39musername\u001b[0m"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\03-contacts.spec.ts",
-                            "column": 17,
-                            "line": 22
-                          },
-                          "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/register\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/register\", waiting until \"load\"\u001b[22m\n\n\n\u001b[0m \u001b[90m 20 |\u001b[39m     \u001b[36mconst\u001b[39m page1 \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m context1\u001b[33m.\u001b[39mnewPage()\u001b[33m;\u001b[39m\n \u001b[90m 21 |\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 22 |\u001b[39m     \u001b[36mawait\u001b[39m page1\u001b[33m.\u001b[39mgoto(\u001b[32m\"/register\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                 \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 23 |\u001b[39m     \u001b[36mawait\u001b[39m page1\u001b[33m.\u001b[39mfill(\n \u001b[90m 24 |\u001b[39m       \u001b[32m'input[name=\"username\"], input[placeholder*=\"username\" i]'\u001b[39m\u001b[33m,\u001b[39m\n \u001b[90m 25 |\u001b[39m       user1\u001b[33m.\u001b[39musername\u001b[0m\n\u001b[2m    at C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\03-contacts.spec.ts:22:17\u001b[22m"
-                        }
-                      ],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-05T16:53:27.340Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\test-results\\03-contacts-Contact-Management-should-register-two-users-chromium\\test-failed-1.png"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\test-results\\03-contacts-Contact-Management-should-register-two-users-chromium\\error-context.md"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "C:\\Users\\Radhouen\\Desktop\\MiniProjet\\webapp\\Client\\QA\\tests\\03-contacts.spec.ts",
-                        "column": 17,
-                        "line": 22
-                      }
-                    }
-                  ],
+                  "results": [],
                   "status": "skipped"
                 }
               ],
@@ -1107,11 +685,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-01-05T16:52:43.390Z",
-    "duration": 47821.203,
+    "startTime": "2026-01-09T15:15:25.621Z",
+    "duration": 9408.322,
     "expected": 0,
-    "skipped": 12,
-    "unexpected": 8,
+    "skipped": 19,
+    "unexpected": 1,
     "flaky": 0
   }
 }

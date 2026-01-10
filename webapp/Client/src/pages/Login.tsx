@@ -66,6 +66,27 @@ export const Login: React.FC = () => {
 
   return (
     <div className="fixed inset-0 auth-gradient-bg flex items-center justify-center px-4 overflow-hidden">
+      {/* Back to Home Button */}
+      <button
+        onClick={() => navigate("/")}
+        className="fixed top-6 left-6 flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm hover:bg-white/15 text-white rounded-lg border border-white/20 transition-all duration-150 z-10"
+      >
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M10 19l-7-7m0 0l7-7m-7 7h18"
+          />
+        </svg>
+        <span className="font-medium">Back to Home</span>
+      </button>
+
       <div className="glass-auth-strong rounded-3xl max-w-md w-full p-8 animate-fade-scale-in">
         {/* Avatar */}
         <div className="flex justify-center mb-6">

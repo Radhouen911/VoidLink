@@ -96,7 +96,8 @@ export class WebSocketService {
 
     if (!accountToken || !cryptoToken) {
       console.log("No valid tokens available - stopping reconnection attempts");
-      window.dispatchEvent(new CustomEvent("unauthorized"));
+      // Don't dispatch unauthorized event here - this could be an intentional logout
+      // The API service will handle 401s from actual requests
       return;
     }
 

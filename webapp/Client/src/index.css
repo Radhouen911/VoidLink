@@ -235,3 +235,14 @@
 *:focus-visible {
   @apply outline-none ring-2 ring-void-accent ring-offset-2 ring-offset-void-black;
 }
+
+/* Remove all input/select shadows and outlines globally */
+input:focus,
+input:focus-visible,
+select:focus,
+select:focus-visible,
+textarea:focus,
+textarea:focus-visible {
+  box-shadow: none !important;
+  outline: none !important;
+}
