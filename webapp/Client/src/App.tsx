@@ -50,7 +50,7 @@ const App: React.FC = () => {
   const { ToastContainer } = useToast();
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/VoidLink">
       <AuthProvider>
         <ToastContainer />
         <AppRoutes />
