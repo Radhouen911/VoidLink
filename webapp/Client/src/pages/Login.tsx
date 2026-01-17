@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loading } from "../components/common/Loading";
 import { useToast } from "../components/common/Toast";
-import { authService } from "../services/auth";
+import { authService } from "../services";
 
 export const Login: React.FC = () => {
   const navigate = useNavigate();

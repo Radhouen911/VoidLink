@@ -9,7 +9,7 @@ import { encryptMessage } from "../crypto/encryption";
 import { SecureStorage } from "../crypto/storage";
 import { useAuth } from "../hooks/useAuth";
 import { useWebSocket } from "../hooks/useWebSocket";
-import { authService, getSessionPrivateKey } from "../services/auth";
+import { authService, getSessionPrivateKey } from "../services";
 import { api } from "../services/index";
 import { decryptMessageForDisplay } from "../services/messageDecryption";
 import { useAuthStore } from "../store/authStore";

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { SecureStorage } from "../crypto/storage";
-import { authService } from "../services/auth";
+import { authService } from "../services";
 import { useAuthStore } from "../store/authStore";
 
 interface AuthContextType {
@@ -50,13 +50,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     window.addEventListener(
       "unauthorized" as any,
-      handleUnauthorized as EventListener
+      handleUnauthorized as EventListener,
     );
 
     return () => {
       window.removeEventListener(
         "unauthorized" as any,
-        handleUnauthorized as EventListener
+        handleUnauthorized as EventListener,
       );
     };
   }, []);
