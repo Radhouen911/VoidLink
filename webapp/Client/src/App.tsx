@@ -36,9 +36,13 @@ const AppRoutes: React.FC = () => {
       <Route
         path="/chat"
         element={
-          <ProtectedRoute>
-            <Chat />
-          </ProtectedRoute>
+          IS_DEMO_MODE ? (
+            <MockChat />
+          ) : (
+            <ProtectedRoute>
+              <Chat />
+            </ProtectedRoute>
+          )
         }
       />
       <Route path="*" element={<NotFound />} />
