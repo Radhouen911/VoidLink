@@ -1,16 +1,80 @@
 # 🔐 VoidLink
 
-> _Zero-trust messaging where even we can't read your conversations_
+> _Zero-trust secure messaging system where privacy is mathematically guaranteed, not policy-dependent_
 
-## What's VoidLink All About?
+[![Academic Project](https://img.shields.io/badge/Type-Academic%20Project-blue.svg)](https://github.com/your-username/voidlink)
+[![Zero Trust](https://img.shields.io/badge/Security-Zero%20Trust-green.svg)](https://github.com/your-username/voidlink)
+[![End-to-End Encryption](https://img.shields.io/badge/Encryption-E2EE-red.svg)](https://github.com/your-username/voidlink)
 
-Imagine a messaging app where the company running it literally **cannot** spy on your conversations - even if they wanted to. That's VoidLink.
+## 🎯 What's VoidLink All About?
 
-**The Big Idea:** Your messages are locked up tight before they ever leave your device. The server? It's just shuffling around encrypted gibberish. No backdoors, no "trust us" promises - just math keeping your secrets safe.
+VoidLink is a **proof-of-concept secure messaging system** that demonstrates how to build privacy-preserving communication where the server literally **cannot** access your messages - even if compromised.
 
-VoidLink started as a university project, but we think it shows how messaging _should_ work in a world where privacy actually matters.
+**The Core Innovation:** All cryptographic operations happen client-side. The server only routes encrypted data blobs, creating mathematical privacy guarantees instead of relying on policy promises.
 
-## Why We Built VoidLink
+**Academic Context:** Developed as a university project to explore zero-trust architecture principles in real-world messaging systems, complete with comprehensive technical documentation and system analysis.
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Node.js 18+ and npm
+- Docker and Docker Compose
+- Modern web browser with JavaScript enabled
+
+### Running VoidLink
+
+1. **Clone the repository**
+
+   ```bash
+   git clone https://github.com/your-username/voidlink.git
+   cd voidlink
+   ```
+
+2. **Start with Docker Compose**
+
+   ```bash
+   cd webapp
+   docker-compose up -d
+   ```
+
+3. **Access the application**
+   - Frontend: http://localhost:3000
+   - Backend API: http://localhost:5000
+
+4. **Create your first account**
+   - Register with username and password
+   - System automatically generates your Ed25519 key pair
+   - Start messaging with end-to-end encryption!
+
+### Manual Setup (Development)
+
+```bash
+# Backend
+cd webapp/Server
+npm install
+npm run dev
+
+# Frontend (new terminal)
+cd webapp/Client
+npm install
+npm run dev
+```
+
+## 📁 Project Structure
+
+```
+voidlink/
+├── 📄 report/                 # Academic report and documentation
+│   ├── main.tex              # LaTeX source
+│   ├── main.pdf              # Compiled report
+│   └── diagram/               # System architecture diagrams
+├── 🌐 webapp/                 # Main application
+│   ├── Client/                # React frontend
+│   ├── Server/                # Node.js backend
+│   └── docker-compose.yml    # Container orchestration
+└── 📊 diagram/                # Additional UML diagrams
+```
 
 **🎯 Our Mission**
 
@@ -128,17 +192,56 @@ We're honest about what we can and can't protect against.
 
 ## 👥 The Team Behind VoidLink
 
-**Mohamed Radhouen Boufateh** - 
+**Mohamed Radhouen Boufateh** - Lead Developer & System Architect  
+**Abdelkader Ben Nejma** - Co-Developer & Security Researcher  
+**Basma K'hil** - University Instructor & Project Advisor
 
-**Abdelkader Ben Nejma** - 
+## 📚 Academic Documentation
 
-**Basma K'hil** - University Instructor & Advisor
+This project includes comprehensive academic documentation:
+
+- **📄 Complete Technical Report** (`report/main.pdf`) - 40+ page analysis covering:
+  - System architecture and design decisions
+  - Cryptographic implementation details
+  - Security analysis and threat modeling
+  - Performance evaluation and testing results
+- **📊 UML Diagrams** - Visual system documentation including:
+  - Component and deployment diagrams
+  - Sequence diagrams for key operations
+  - User flow and interaction diagrams
+
+## 🤝 Contributing
+
+While this is primarily an academic project, we welcome:
+
+- 🐛 Bug reports and security findings
+- 💡 Suggestions for improvements
+- 📖 Documentation enhancements
+- 🔍 Code reviews and feedback
+
+Please open an issue or submit a pull request!
+
+## 📄 License
+
+This project is released under the MIT License. See `LICENSE` file for details.
+
+## ⚠️ Important Disclaimer
+
+**VoidLink is a proof-of-concept academic project.** While it demonstrates secure messaging principles, it has not undergone comprehensive security auditing and should not be used for production or sensitive communications without further security review.
 
 ## 🎓 Why This Matters
 
 In a world where "privacy policy" usually means "we're going to sell your data," VoidLink shows there's a better way.
 
 VoidLink proves you can build systems where privacy isn't a promise you have to trust - it's a mathematical guarantee you can verify.
+
+## 🙏 Acknowledgments
+
+Special thanks to:
+
+- Our university for supporting this research project
+- The open-source cryptography community
+- All contributors and reviewers who helped improve this work
 
 ---
 

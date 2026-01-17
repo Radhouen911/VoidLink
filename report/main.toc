@@ -1,106 +1,72 @@
 \babel@toc {english}{}\relax 
-\contentsline {chapter}{Abstract}{i}{chapter*.1}%
-\contentsline {chapter}{Keywords}{ii}{chapter*.2}%
-\thispagestyle {empty}
-\contentsline {chapter}{List of Figures}{vii}{chapter*.4}%
-\contentsline {chapter}{List of Abbreviations}{viii}{chapter*.5}%
-\contentsline {chapter}{General Introduction}{1}{chapter*.6}%
-\contentsline {chapter}{\numberline {1}General Context and Objectives}{3}{chapter.1}%
-\contentsline {section}{\numberline {1.1}Background and Motivation}{3}{section.1.1}%
+\contentsline {chapter}{Acknowledgments}{i}{chapter*.1}%
+\contentsline {chapter}{Summary}{ii}{chapter*.2}%
+\thispagestyle {frontmatter}
+\contentsline {chapter}{List of Figures}{vi}{chapter*.4}%
+\contentsline {chapter}{List of Tables}{vii}{chapter*.5}%
+\contentsline {chapter}{List of Abbreviations}{viii}{chapter*.6}%
+\contentsline {chapter}{General Introduction}{1}{chapter*.7}%
+\contentsline {chapter}{\numberline {1}Context, Objectives, and Requirements Analysis}{2}{chapter.1}%
+\contentsline {section}{Introduction}{2}{section*.8}%
+\contentsline {section}{\numberline {1.1}Background and Motivation}{2}{section.1.1}%
 \contentsline {section}{\numberline {1.2}Problem Statement}{3}{section.1.2}%
-\contentsline {section}{\numberline {1.3}Project Objectives}{4}{section.1.3}%
-\contentsline {section}{\numberline {1.4}Scope and Limitations}{5}{section.1.4}%
-\contentsline {section}{\numberline {1.5}Brief Presentation of the Proposed Solution}{6}{section.1.5}%
-\contentsline {section}{\numberline {1.6}Chapter Conclusion}{7}{section.1.6}%
-\contentsline {chapter}{\numberline {2}Functional Requirements and Analysis}{8}{chapter.2}%
-\contentsline {section}{\numberline {2.1}Functional Requirements}{8}{section.2.1}%
-\contentsline {subsection}{\numberline {2.1.1}User Account Management}{8}{subsection.2.1.1}%
-\contentsline {subsection}{\numberline {2.1.2}Cryptographic Profile Management}{9}{subsection.2.1.2}%
-\contentsline {subsection}{\numberline {2.1.3}Contact Management}{10}{subsection.2.1.3}%
-\contentsline {subsection}{\numberline {2.1.4}Messaging Operations}{10}{subsection.2.1.4}%
-\contentsline {section}{\numberline {2.2}Non-Functional Requirements}{11}{section.2.2}%
-\contentsline {subsection}{\numberline {2.2.1}Security Requirements}{12}{subsection.2.2.1}%
-\contentsline {subsection}{\numberline {2.2.2}Performance Requirements}{13}{subsection.2.2.2}%
-\contentsline {subsection}{\numberline {2.2.3}Reliability Requirements}{13}{subsection.2.2.3}%
-\contentsline {section}{\numberline {2.3}Use-Case Descriptions}{14}{section.2.3}%
-\contentsline {subsection}{\numberline {2.3.1}Use Case 1: User Registration and Initialization}{14}{subsection.2.3.1}%
-\contentsline {subsection}{\numberline {2.3.2}Use Case 2: User Login and Message Authentication}{14}{subsection.2.3.2}%
-\contentsline {subsection}{\numberline {2.3.3}Use Case 3: Secure Message Exchange}{15}{subsection.2.3.3}%
-\contentsline {subsection}{\numberline {2.3.4}Use Case 4: Contact Management}{16}{subsection.2.3.4}%
-\contentsline {section}{\numberline {2.4}Constraints and Assumptions}{17}{section.2.4}%
-\contentsline {subsection}{\numberline {2.4.1}Technical Constraints}{17}{subsection.2.4.1}%
-\contentsline {subsection}{\numberline {2.4.2}Design Constraints}{17}{subsection.2.4.2}%
-\contentsline {subsection}{\numberline {2.4.3}Assumptions}{17}{subsection.2.4.3}%
-\contentsline {section}{\numberline {2.5}Chapter Conclusion}{18}{section.2.5}%
-\contentsline {chapter}{\numberline {3}System Architecture and Design}{19}{chapter.3}%
-\contentsline {section}{\numberline {3.1}Global Architecture}{19}{section.3.1}%
-\contentsline {subsection}{\numberline {3.1.1}Client Layer (Frontend)}{20}{subsection.3.1.1}%
-\contentsline {subsection}{\numberline {3.1.2}Application Server Layer (Backend)}{20}{subsection.3.1.2}%
-\contentsline {subsection}{\numberline {3.1.3}Data Persistence Layer (Database)}{21}{subsection.3.1.3}%
-\contentsline {section}{\numberline {3.2}Communication Flows}{21}{section.3.2}%
-\contentsline {subsection}{\numberline {3.2.1}Account Registration and Initialization Flow}{21}{subsection.3.2.1}%
-\contentsline {subsection}{\numberline {3.2.2}Cryptographic Authentication Flow}{22}{subsection.3.2.2}%
-\contentsline {section}{\numberline {3.3}Deployment Architecture with Docker}{23}{section.3.3}%
-\contentsline {subsection}{\numberline {3.3.1}Docker Container Architecture}{23}{subsection.3.3.1}%
-\contentsline {subsection}{\numberline {3.3.2}Benefits of Docker Containerization}{24}{subsection.3.3.2}%
-\contentsline {subsection}{\numberline {3.3.3}Docker Compose Configuration}{25}{subsection.3.3.3}%
-\contentsline {subsection}{\numberline {3.3.4}Message Sending Flow}{25}{subsection.3.3.4}%
-\contentsline {subsection}{\numberline {3.3.5}WebSocket Connection Flow}{26}{subsection.3.3.5}%
-\contentsline {section}{\numberline {3.4}Security Design}{27}{section.3.4}%
-\contentsline {subsection}{\numberline {3.4.1}Zero-Trust Server Design}{27}{subsection.3.4.1}%
-\contentsline {subsection}{\numberline {3.4.2}Two-Layer Authentication Architecture}{27}{subsection.3.4.2}%
-\contentsline {subsection}{\numberline {3.4.3}Key Management and Storage}{28}{subsection.3.4.3}%
-\contentsline {subsection}{\numberline {3.4.4}Message Encryption}{28}{subsection.3.4.4}%
-\contentsline {subsection}{\numberline {3.4.5}Contact Verification}{29}{subsection.3.4.5}%
-\contentsline {section}{\numberline {3.5}Database Schema Design}{29}{section.3.5}%
-\contentsline {subsection}{\numberline {3.5.1}Account Management Layer}{30}{subsection.3.5.1}%
-\contentsline {subsection}{\numberline {3.5.2}Cryptographic Layer}{30}{subsection.3.5.2}%
-\contentsline {subsection}{\numberline {3.5.3}Application Data Layer}{31}{subsection.3.5.3}%
-\contentsline {section}{\numberline {3.6}WebSocket Architecture}{33}{section.3.6}%
-\contentsline {subsection}{\numberline {3.6.1}Connection Management}{33}{subsection.3.6.1}%
-\contentsline {subsection}{\numberline {3.6.2}Message Routing}{33}{subsection.3.6.2}%
-\contentsline {subsection}{\numberline {3.6.3}Event Types}{34}{subsection.3.6.3}%
-\contentsline {section}{\numberline {3.7}Chapter Conclusion}{34}{section.3.7}%
-\contentsline {chapter}{\numberline {4}Implementation Overview}{36}{chapter.4}%
-\contentsline {section}{\numberline {4.1}Technology Stack Justification}{36}{section.4.1}%
-\contentsline {subsection}{\numberline {4.1.1}Frontend Technology Stack}{36}{subsection.4.1.1}%
-\contentsline {subsection}{\numberline {4.1.2}Backend Technology Stack}{37}{subsection.4.1.2}%
-\contentsline {section}{\numberline {4.2}Application Structure}{38}{section.4.2}%
-\contentsline {subsection}{\numberline {4.2.1}Frontend Structure}{38}{subsection.4.2.1}%
-\contentsline {subsection}{\numberline {4.2.2}Backend Structure}{40}{subsection.4.2.2}%
-\contentsline {section}{\numberline {4.3}Core Implementation Flows}{41}{section.4.3}%
-\contentsline {subsection}{\numberline {4.3.1}Registration and Authentication Flow}{41}{subsection.4.3.1}%
-\contentsline {subsection}{\numberline {4.3.2}Secure Messaging Flow}{42}{subsection.4.3.2}%
-\contentsline {subsection}{\numberline {4.3.3}Contact Management Flow}{43}{subsection.4.3.3}%
-\contentsline {section}{\numberline {4.4}Error Handling and Session Management}{43}{section.4.4}%
-\contentsline {subsection}{\numberline {4.4.1}Error Handling Strategy}{43}{subsection.4.4.1}%
-\contentsline {subsection}{\numberline {4.4.2}Session Management}{44}{subsection.4.4.2}%
-\contentsline {section}{\numberline {4.5}Design Trade-offs and Technical Decisions}{45}{section.4.5}%
-\contentsline {section}{\numberline {4.6}Chapter Conclusion}{46}{section.4.6}%
-\contentsline {chapter}{\numberline {5}Testing, Validation, and Results}{48}{chapter.5}%
-\contentsline {section}{\numberline {5.1}Testing Strategy}{48}{section.5.1}%
-\contentsline {subsection}{\numberline {5.1.1}End-to-End Testing}{48}{subsection.5.1.1}%
-\contentsline {subsection}{\numberline {5.1.2}Testing Limitations}{49}{subsection.5.1.2}%
-\contentsline {section}{\numberline {5.2}Key Test Scenarios}{49}{section.5.2}%
-\contentsline {subsection}{\numberline {5.2.1}Authentication Security Tests}{49}{subsection.5.2.1}%
-\contentsline {subsection}{\numberline {5.2.2}End-to-End Messaging Tests}{50}{subsection.5.2.2}%
-\contentsline {subsection}{\numberline {5.2.3}User Interface and Experience Tests}{50}{subsection.5.2.3}%
-\contentsline {section}{\numberline {5.3}Validation Against Requirements}{51}{section.5.3}%
-\contentsline {subsection}{\numberline {5.3.1}Functional Requirements Validation}{51}{subsection.5.3.1}%
-\contentsline {subsection}{\numberline {5.3.2}Non-Functional Requirements Validation}{51}{subsection.5.3.2}%
-\contentsline {section}{\numberline {5.4}Known Issues and Resolutions}{52}{section.5.4}%
-\contentsline {section}{\numberline {5.5}Stability and Reliability Discussion}{54}{section.5.5}%
-\contentsline {section}{\numberline {5.6}Chapter Conclusion}{55}{section.5.6}%
-\contentsline {chapter}{\numberline {6}Discussion and Future Work}{57}{chapter.6}%
-\contentsline {section}{\numberline {6.1}Overall Assessment}{57}{section.6.1}%
-\contentsline {section}{\numberline {6.2}Achieved Objectives}{58}{section.6.2}%
-\contentsline {section}{\numberline {6.3}Limitations}{58}{section.6.3}%
-\contentsline {section}{\numberline {6.4}Possible Improvements}{59}{section.6.4}%
-\contentsline {subsection}{\numberline {6.4.1}Testing and Quality Assurance Improvements}{59}{subsection.6.4.1}%
-\contentsline {subsection}{\numberline {6.4.2}Security Enhancements}{60}{subsection.6.4.2}%
-\contentsline {subsection}{\numberline {6.4.3}Functionality Enhancements}{61}{subsection.6.4.3}%
-\contentsline {subsection}{\numberline {6.4.4}Performance and Scalability Improvements}{62}{subsection.6.4.4}%
-\contentsline {subsection}{\numberline {6.4.5}Usability Improvements}{63}{subsection.6.4.5}%
-\contentsline {section}{\numberline {6.5}Future Extensions}{64}{section.6.5}%
-\contentsline {section}{\numberline {6.6}Conclusion}{65}{section.6.6}%
-\contentsline {chapter}{General Conclusion}{66}{chapter*.7}%
+\contentsline {section}{\numberline {1.3}Project Objectives and Academic Context}{3}{section.1.3}%
+\contentsline {section}{\numberline {1.4}Functional Requirements}{4}{section.1.4}%
+\contentsline {section}{\numberline {1.5}Non-Functional Requirements}{5}{section.1.5}%
+\contentsline {section}{\numberline {1.6}Use-Case Overview}{7}{section.1.6}%
+\contentsline {section}{\numberline {1.7}Conclusion}{7}{section.1.7}%
+\contentsline {chapter}{\numberline {2}System Architecture and Design}{8}{chapter.2}%
+\contentsline {section}{\numberline {2.1}Introduction}{8}{section.2.1}%
+\contentsline {section}{\numberline {2.2}Global Architecture}{8}{section.2.2}%
+\contentsline {subsection}{\numberline {2.2.1}Client Layer (Frontend)}{9}{subsection.2.2.1}%
+\contentsline {subsection}{\numberline {2.2.2}Application Server Layer (Backend)}{9}{subsection.2.2.2}%
+\contentsline {subsection}{\numberline {2.2.3}Data Persistence Layer (Database)}{9}{subsection.2.2.3}%
+\contentsline {section}{\numberline {2.3}Communication Flows}{10}{section.2.3}%
+\contentsline {subsection}{\numberline {2.3.1}Account Registration and Initialization Flow}{10}{subsection.2.3.1}%
+\contentsline {subsection}{\numberline {2.3.2}Cryptographic Authentication Flow}{10}{subsection.2.3.2}%
+\contentsline {section}{\numberline {2.4}Deployment Architecture with Docker}{11}{section.2.4}%
+\contentsline {subsection}{\numberline {2.4.1}Docker Container Architecture}{12}{subsection.2.4.1}%
+\contentsline {subsection}{\numberline {2.4.2}Benefits of Docker Containerization}{12}{subsection.2.4.2}%
+\contentsline {subsection}{\numberline {2.4.3}Docker Compose Configuration}{13}{subsection.2.4.3}%
+\contentsline {subsection}{\numberline {2.4.4}Message Sending Flow}{14}{subsection.2.4.4}%
+\contentsline {subsection}{\numberline {2.4.5}WebSocket Connection Flow}{15}{subsection.2.4.5}%
+\contentsline {section}{\numberline {2.5}Security Design}{16}{section.2.5}%
+\contentsline {subsection}{\numberline {2.5.1}Zero-Trust Server Design}{16}{subsection.2.5.1}%
+\contentsline {subsection}{\numberline {2.5.2}Two-Layer Authentication Architecture}{17}{subsection.2.5.2}%
+\contentsline {subsection}{\numberline {2.5.3}Key Management and Storage}{17}{subsection.2.5.3}%
+\contentsline {subsection}{\numberline {2.5.4}Message Encryption}{18}{subsection.2.5.4}%
+\contentsline {subsection}{\numberline {2.5.5}Contact Verification}{18}{subsection.2.5.5}%
+\contentsline {section}{\numberline {2.6}Database Schema Design}{19}{section.2.6}%
+\contentsline {section}{\numberline {2.7}WebSocket Architecture}{19}{section.2.7}%
+\contentsline {subsection}{\numberline {2.7.1}Connection Management}{20}{subsection.2.7.1}%
+\contentsline {subsection}{\numberline {2.7.2}Message Routing}{20}{subsection.2.7.2}%
+\contentsline {subsection}{\numberline {2.7.3}Event Types}{20}{subsection.2.7.3}%
+\contentsline {section}{\numberline {2.8}Conclusion}{21}{section.2.8}%
+\contentsline {chapter}{\numberline {3}Implementation Overview}{22}{chapter.3}%
+\contentsline {section}{Introduction}{22}{section*.9}%
+\contentsline {section}{\numberline {3.1}Technology Stack Justification}{22}{section.3.1}%
+\contentsline {section}{\numberline {3.2}Development Methodology and Version Control}{22}{section.3.2}%
+\contentsline {subsection}{\numberline {3.2.1}Role Division and Team Organization}{22}{subsection.3.2.1}%
+\contentsline {subsection}{\numberline {3.2.2}Version Control with Git and GitHub}{23}{subsection.3.2.2}%
+\contentsline {subsection}{\numberline {3.2.3}Development Environment}{23}{subsection.3.2.3}%
+\contentsline {subsection}{\numberline {3.2.4}Code Organization}{23}{subsection.3.2.4}%
+\contentsline {subsection}{\numberline {3.2.5}Frontend Technology Stack}{24}{subsection.3.2.5}%
+\contentsline {subsection}{\numberline {3.2.6}Backend Technology Stack}{24}{subsection.3.2.6}%
+\contentsline {section}{\numberline {3.3}Application Structure}{25}{section.3.3}%
+\contentsline {subsection}{\numberline {3.3.1}Frontend Structure}{25}{subsection.3.3.1}%
+\contentsline {subsection}{\numberline {3.3.2}Backend Structure}{27}{subsection.3.3.2}%
+\contentsline {section}{\numberline {3.4}Core Implementation Flows}{28}{section.3.4}%
+\contentsline {subsection}{\numberline {3.4.1}Registration and Authentication Flow}{28}{subsection.3.4.1}%
+\contentsline {subsection}{\numberline {3.4.2}Secure Messaging Flow}{29}{subsection.3.4.2}%
+\contentsline {subsection}{\numberline {3.4.3}Contact Management Flow}{30}{subsection.3.4.3}%
+\contentsline {subsection}{\numberline {3.4.4}Key Cryptographic Operations}{30}{subsection.3.4.4}%
+\contentsline {section}{\numberline {3.5}Error Handling and Session Management}{32}{section.3.5}%
+\contentsline {subsection}{\numberline {3.5.1}Error Handling Strategy}{32}{subsection.3.5.1}%
+\contentsline {subsection}{\numberline {3.5.2}Session Management}{33}{subsection.3.5.2}%
+\contentsline {section}{\numberline {3.6}Design Trade-offs and Technical Decisions}{34}{section.3.6}%
+\contentsline {section}{\numberline {3.7}Testing and Validation}{35}{section.3.7}%
+\contentsline {subsection}{\numberline {3.7.1}Testing Approach}{35}{subsection.3.7.1}%
+\contentsline {subsection}{\numberline {3.7.2}Testing Limitations}{36}{subsection.3.7.2}%
+\contentsline {section}{\numberline {3.8}Conclusion}{36}{section.3.8}%
+\contentsline {chapter}{General Conclusion}{37}{chapter*.10}%
+\contentsline {chapter}{Webography}{38}{chapter*.10}%
