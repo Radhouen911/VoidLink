@@ -8,6 +8,10 @@ import {
   getSessionPrivateKey as realGetSessionPrivateKey,
   setSessionPrivateKey as realSetSessionPrivateKey,
 } from "./auth";
+import {
+  batchDecryptMessages as realBatchDecryptMessages,
+  decryptMessageForDisplay as realDecryptMessageForDisplay,
+} from "./messageDecryption";
 import { websocket as realWebSocketService } from "./websocket";
 
 // Import mock services
@@ -18,6 +22,10 @@ import {
   getSessionPrivateKey as mockGetSessionPrivateKey,
   setSessionPrivateKey as mockSetSessionPrivateKey,
 } from "./mockAuth";
+import {
+  batchDecryptMessages as mockBatchDecryptMessages,
+  decryptMessageForDisplay as mockDecryptMessageForDisplay,
+} from "./mockMessageDecryption";
 import { mockWebSocketService } from "./mockWebSocket";
 
 // Export the appropriate services based on demo mode
