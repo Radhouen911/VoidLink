@@ -86,6 +86,12 @@ export class MockAuthService {
     useAuthStore.getState().setAccountToken(accountToken);
     useAuthStore.getState().setCryptoToken(cryptoToken);
 
+    // Set mock session private key for decryption
+    setSessionPrivateKey(
+      "mock_demo_private_key_64_chars_long_ed25519_format_example_demo",
+      "demo",
+    );
+
     return { username: "demo", publicKey };
   }
 

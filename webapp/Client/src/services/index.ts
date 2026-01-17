@@ -35,6 +35,12 @@ export const setSessionPrivateKey = IS_DEMO_MODE
 export const clearSessionPrivateKey = IS_DEMO_MODE
   ? mockClearSessionPrivateKey
   : realClearSessionPrivateKey;
+export const decryptMessageForDisplay = IS_DEMO_MODE
+  ? mockDecryptMessageForDisplay
+  : realDecryptMessageForDisplay;
+export const batchDecryptMessages = IS_DEMO_MODE
+  ? mockBatchDecryptMessages
+  : realBatchDecryptMessages;
 
 console.log(
   `🔧 Services initialized in ${IS_DEMO_MODE ? "DEMO" : "PRODUCTION"} mode`,

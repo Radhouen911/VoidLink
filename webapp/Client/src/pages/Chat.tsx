@@ -11,11 +11,11 @@ import { useAuth } from "../hooks/useAuth";
 import { useWebSocket } from "../hooks/useWebSocket";
 import {
   authService,
+  decryptMessageForDisplay,
   getSessionPrivateKey,
   webSocketService,
 } from "../services";
 import { api } from "../services/index";
-import { decryptMessageForDisplay } from "../services/messageDecryption";
 import { useAuthStore } from "../store/authStore";
 import { Message, useChatStore } from "../store/chatStore";
 import { useContactStore } from "../store/contactStore";

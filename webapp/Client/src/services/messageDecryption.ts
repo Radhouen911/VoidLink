@@ -4,7 +4,7 @@
  */
 
 import { decryptMessage } from "../crypto/encryption";
-import { getSessionPrivateKey } from "./auth";
+import { getSessionPrivateKey } from "./index";
 
 export interface DecryptionResult {
   success: boolean;
@@ -26,7 +26,7 @@ export function decryptMessageForDisplay(
   encryptedPayload: string,
   senderPublicKey: string,
   recipientPublicKey: string,
-  currentUserPublicKey: string
+  currentUserPublicKey: string,
 ): DecryptionResult {
   // Get private key from session
   const privateKey = getSessionPrivateKey();
@@ -58,7 +58,7 @@ export function decryptMessageForDisplay(
     const decrypted = decryptMessage(
       encryptedPayload,
       otherPartyPublicKey,
-      privateKey
+      privateKey,
     );
 
     if (!decrypted) {
@@ -97,7 +97,7 @@ export function batchDecryptMessages<
     senderId: string;
     recipientId: string;
     decryptedContent?: string;
-  }
+  },
 >(messages: T[], currentUserPublicKey: string): T[] {
   return messages.map((msg) => {
     // Skip if already decrypted
@@ -109,7 +109,7 @@ export function batchDecryptMessages<
       msg.encryptedPayload,
       msg.senderId,
       msg.recipientId,
-      currentUserPublicKey
+      currentUserPublicKey,
     );
 
     return {
