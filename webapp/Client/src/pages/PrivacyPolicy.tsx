@@ -13,7 +13,7 @@ export const PrivacyPolicy: React.FC = () => {
             onClick={() => navigate("/")}
             className="flex items-center gap-3 hover:opacity-80 transition-opacity"
           >
-            <img src="/logo.png" alt="VoidLink" className="h-6 w-auto" />
+            <img src="logo.png" alt="VoidLink" className="h-6 w-auto" />
             <span className="text-2xl font-bold text-white">VoidLink</span>
           </button>
           <div className="flex gap-4">

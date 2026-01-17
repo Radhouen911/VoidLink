@@ -16,10 +16,11 @@ export const Login: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // No validation - always proceed with demo login
     setIsLoading(true);
     try {
       showToast("Logging into demo account...", "info");
-      // Always log in as demo user regardless of input
+      // Always log in as demo user regardless of input (even if fields are empty)
       await authService.login("demo", "demo123", "demo");
       showToast("Welcome to VoidLink Demo!", "success");
       showToast("Redirecting to chat...", "info");
@@ -94,7 +95,7 @@ export const Login: React.FC = () => {
           Welcome Back
         </h1>
         <p className="text-center text-white/70 mb-8 text-sm">
-          Demo Mode - Click "Enter Demo" to explore VoidLink
+          Login from any device
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -193,7 +194,7 @@ export const Login: React.FC = () => {
             disabled={isLoading}
             className="w-full btn-gradient py-3 rounded-xl text-base font-semibold"
           >
-            Enter Demo
+            Decrypt & Login
           </button>
         </form>
 

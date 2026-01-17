@@ -9,7 +9,11 @@ import { encryptMessage } from "../crypto/encryption";
 import { SecureStorage } from "../crypto/storage";
 import { useAuth } from "../hooks/useAuth";
 import { useWebSocket } from "../hooks/useWebSocket";
-import { authService, getSessionPrivateKey } from "../services";
+import {
+  authService,
+  getSessionPrivateKey,
+  webSocketService,
+} from "../services";
 import { api } from "../services/index";
 import { decryptMessageForDisplay } from "../services/messageDecryption";
 import { useAuthStore } from "../store/authStore";
@@ -878,7 +882,7 @@ export const Chat: React.FC = () => {
       <div className="bg-black/20 backdrop-blur-md border-b border-white/10 sticky top-0 z-10">
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <img src="/logo.png" alt="VoidLink" className="h-5 w-auto" />
+            <img src="logo.png" alt="VoidLink" className="h-5 w-auto" />
             <h1 className="text-xl font-bold text-white">VoidLink</h1>
             <div className="flex items-center gap-2 text-xs bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/20">
               <div

@@ -59,34 +59,34 @@ export class MockAuthService {
    * Mock login - accepts demo/demo123 with any passphrase
    */
   async login(username: string, password: string, passphrase: string) {
-    console.log("Mock login:", { username, password, passphrase });
+    console.log("Mock login - always succeeds:", {
+      username,
+      password,
+      passphrase,
+    });
 
     // Simulate delay
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
-    if (username === "demo" && password === "demo123") {
-      // Store mock tokens
-      const accountToken = "mock_account_token_" + Date.now();
-      const cryptoToken = "mock_crypto_token_" + Date.now();
+    // Always succeed regardless of credentials (even empty ones)
+    const accountToken = "mock_account_token_" + Date.now();
+    const cryptoToken = "mock_crypto_token_" + Date.now();
 
-      SecureStorage.setAccountToken(accountToken);
-      SecureStorage.setCryptoToken(cryptoToken);
-      SecureStorage.setUsername(username);
+    SecureStorage.setAccountToken(accountToken);
+    SecureStorage.setCryptoToken(cryptoToken);
+    SecureStorage.setUsername("demo");
 
-      // Mock keys
-      const publicKey =
-        "mock_demo_public_key_64_chars_long_ed25519_format_example_demo";
-      SecureStorage.setPublicKey(publicKey);
+    // Mock keys
+    const publicKey =
+      "mock_demo_public_key_64_chars_long_ed25519_format_example_demo";
+    SecureStorage.setPublicKey(publicKey);
 
-      // Update auth store
-      useAuthStore.getState().setUser({ username, publicKey });
-      useAuthStore.getState().setAccountToken(accountToken);
-      useAuthStore.getState().setCryptoToken(cryptoToken);
+    // Update auth store
+    useAuthStore.getState().setUser({ username: "demo", publicKey });
+    useAuthStore.getState().setAccountToken(accountToken);
+    useAuthStore.getState().setCryptoToken(cryptoToken);
 
-      return { username, publicKey };
-    }
-
-    throw new Error("Invalid username or password");
+    return { username: "demo", publicKey };
   }
 
   /**

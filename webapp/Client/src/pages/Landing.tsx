@@ -13,7 +13,7 @@ export const Landing: React.FC = () => {
             onClick={() => navigate("/")}
             className="flex items-center gap-3 hover:opacity-80 transition-opacity"
           >
-            <img src="/logo.png" alt="VoidLink" className="h-6 w-auto" />
+            <img src="logo.png" alt="VoidLink" className="h-6 w-auto" />
             <h1 className="text-2xl font-bold text-white">VoidLink</h1>
           </button>
           <div className="flex gap-4">
