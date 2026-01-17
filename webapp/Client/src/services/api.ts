@@ -51,6 +51,12 @@ class ApiService {
       const data = await response.json();
 
       if (!response.ok) {
+        // Handle 401 Unauthorized - emit event for AuthContext
+        if (response.status === 401) {
+          console.log("401 Unauthorized - emitting event");
+          window.dispatchEvent(new CustomEvent("unauthorized"));
+        }
+
         // Extract the most user-friendly error message
         const errorMessage =
           data.message ||
@@ -203,9 +209,10 @@ class ApiService {
     });
   }
 
-  async getConversation(username: string, since?: string, limit = 50) {
+  async getConversation(username: string, since?: string, before?: string, limit = 50) {
     const params = new URLSearchParams({ limit: limit.toString() });
     if (since) params.append("since", since);
+    if (before) params.append("before", before);
 
     return this.request(`/api/messages/conversation/${username}?${params}`, {
       method: "GET",

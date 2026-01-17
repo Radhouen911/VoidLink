@@ -25,27 +25,29 @@ export const Toast: React.FC<ToastProps> = ({
   }, [duration, onClose]);
 
   const typeClasses = {
-    success: "bg-void-success text-void-black",
-    error: "bg-void-danger text-white",
-    info: "bg-void-blue text-void-text",
+    success:
+      "glass-strong border-void-success/50 text-void-success shadow-lg shadow-void-success/20",
+    error:
+      "glass-strong border-void-danger/50 text-void-danger shadow-lg shadow-void-danger/20",
+    info: "glass-strong border-void-blue/50 text-void-blue shadow-lg shadow-void-blue/20",
   };
 
   return (
     <div
-      className={`px-6 py-3 rounded-lg shadow-lg transition-all duration-300 ${
+      className={`px-6 py-3 rounded-xl border transition-all duration-300 backdrop-blur-xl ${
         typeClasses[type]
       } ${
         isVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"
       }`}
     >
       <div className="flex items-center gap-2">
-        <span>{message}</span>
+        <span className="font-medium">{message}</span>
         <button
           onClick={() => {
             setIsVisible(false);
             setTimeout(onClose, 300);
           }}
-          className="ml-2 hover:opacity-70"
+          className="ml-2 hover:opacity-70 transition-opacity"
         >
           ✕
         </button>

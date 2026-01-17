@@ -12,19 +12,27 @@ export const Input: React.FC<InputProps> = ({
   ...props
 }) => {
   return (
-    <div className="w-full">
+    <div className="w-full mb-4">
       {label && (
-        <label className="block text-sm font-medium text-void-text mb-2">
+        <label className="block text-sm font-medium text-white/90 mb-2">
           {label}
         </label>
       )}
       <input
-        className={`input w-full px-4 py-2 bg-void-dark border border-void-purple rounded-lg text-void-text placeholder-void-text-dim focus:outline-none focus:border-void-accent focus:ring-1 focus:ring-void-accent transition-all ${
-          error ? "border-void-danger" : ""
+        className={`w-full px-4 py-2.5 bg-white/5 border rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-0 focus:border-transparent focus:shadow-none transition-all duration-300 ease-in-out ${
+          error
+            ? "border-red-400/50 focus:bg-white/10"
+            : "border-white/20 focus:bg-white/10 focus:border-white/30"
         } ${className}`}
+        style={{ caretColor: "#a78bfa", boxShadow: "none" }}
         {...props}
       />
-      {error && <p className="mt-1 text-sm text-void-danger">{error}</p>}
+      {error && (
+        <p className="mt-1.5 text-sm text-red-400 flex items-center gap-1">
+          <span>⚠</span>
+          {error}
+        </p>
+      )}
     </div>
   );
 };

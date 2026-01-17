@@ -35,9 +35,14 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "cd QA && npx playwright test",
+    "test:all": "cd QA && npx playwright test --reporter=html,list",
+    "test:quick": "cd QA && npx playwright test e2e-complete.spec.ts",
     "test:ui": "cd QA && npx playwright test --ui",
     "test:headed": "cd QA && npx playwright test --headed",
     "test:debug": "cd QA && npx playwright test --debug",
-    "test:report": "cd QA && npx playwright show-report"
+    "test:report": "cd QA && npx playwright show-report",
+    "test:crypto": "cd QA && npx playwright test crypto-operations.spec.ts",
+    "test:security": "cd QA && npx playwright test security.spec.ts",
+    "test:errors": "cd QA && npx playwright test error-handling.spec.ts"
   }
 }

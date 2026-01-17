@@ -340,11 +340,11 @@ router.get(
           },
           cryptoProfile: req.cryptoProfile
             ? {
-                cryptoProfileId: req.cryptoProfile.crypto_profile_id,
-                hasPublicKey: !!req.cryptoProfile.public_key,
-                cloudBackupEnabled: req.cryptoProfile.cloud_backup_enabled,
-                keyUploadedAt: req.cryptoProfile.key_uploaded_at,
-              }
+              cryptoProfileId: req.cryptoProfile.crypto_profile_id,
+              hasPublicKey: !!req.cryptoProfile.public_key,
+              cloudBackupEnabled: req.cryptoProfile.cloud_backup_enabled,
+              keyUploadedAt: req.cryptoProfile.key_uploaded_at,
+            }
             : null,
         },
       });
@@ -756,7 +756,7 @@ router.post("/crypto/verify", requireAccountSession, async (req, res) => {
 
     // Create crypto session
     const cryptoToken = crypto.randomBytes(32).toString("hex");
-    const cryptoExpiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+    const cryptoExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
     const cryptoSession = await db.createCryptoSession(
       req.accountSession.sessionId,

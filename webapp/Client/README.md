@@ -265,47 +265,95 @@ npm run lint
 
 **Production Ready** ✅
 
-- All core features implemented and working
-- Authentication flow complete with passphrase encryption
-- Contact management functional (send/accept/reject requests)
-- **Messaging system operational with proper end-to-end encryption**
-- Real-time features active (WebSocket, presence, typing indicators)
-- Error handling comprehensive with user-friendly toast notifications
-- UI polished and responsive with dark "void" theme
+### Core Features (Complete)
 
-### Recent Fixes (Latest)
+- ✅ End-to-end encryption with Ed25519 + Curve25519 + NaCl
+- ✅ Two-layer authentication (Account + Crypto sessions)
+- ✅ Passphrase-encrypted private keys (local + cloud backup)
+- ✅ Multi-device support via encrypted cloud backup
+- ✅ Contact management (send/accept/reject requests)
+- ✅ Real-time messaging via WebSocket
+- ✅ Message history with infinite scroll (30 messages per load)
+- ✅ Online/offline presence indicators
+- ✅ Typing indicators
+- ✅ Read receipts (⏱ ✓ ✓✓)
+- ✅ Delivery confirmations
+- ✅ Ping/pong keep-alive (30s interval)
+- ✅ Manual presence status (Online/Away/Busy)
+- ✅ Modern glassmorphism UI design
+- ✅ Zero polling - 100% WebSocket real-time
+- ✅ Session persistence across page refresh
+- ✅ AuthContext for global auth state management
+- ✅ Automatic session expiry handling with redirect
 
-- ✅ Backend now returns `publicKey` in contacts list response
-- ✅ Frontend uses proper NaCl box encryption with sender's private key
-- ✅ **FIXED: Ed25519 to Curve25519 key conversion** using `ed2curve` library
-  - Backend stores Ed25519 signing keys (for authentication)
-  - NaCl box encryption requires Curve25519 keys
-  - Added `ed2curve` package for proper key conversion
-  - Both encryption and decryption now use standard Ed25519→Curve25519 conversion
-  - Messages now encrypt and decrypt successfully!
-- ✅ Private key cached in memory during session for seamless messaging
-- ✅ **Messages now load from server** on conversation open
-- ✅ **Messages decrypt automatically** when displayed
-- ✅ **Fixed conversation history mapping** - correctly handles backend's `direction` field
-- ✅ **Fixed WebSocket message handling** - matches backend's actual message format
-- ✅ **Changed message sending from REST API to WebSocket** for real-time delivery
-- ✅ Encryption format matches backend expectations (base64 JSON payload)
-- ✅ Fixed deprecated `onKeyPress` warning (now uses `onKeyDown`)
-- ✅ Improved error messages for session expiration
+### Recent Updates (Latest)
 
-### Integration Complete
+**Session Management:**
 
-The frontend now correctly integrates with the backend:
+- ✅ Fixed session expiry on refresh - passphrase now stored in sessionStorage
+- ✅ Private key automatically restored from encrypted key on page refresh
+- ✅ AuthContext added for global auth state and automatic logout on 401
+- ✅ WebSocket and API emit unauthorized events for expired sessions
 
-- Conversation history loads with proper `direction` field mapping
-- Messages decrypt using correct sender/recipient public keys
-- WebSocket messages handled according to backend format
-- All API responses mapped correctly to frontend data structures
+**Message System:**
+
+- ✅ Infinite scroll for message history (loads 30 at a time)
+- ✅ Scroll to top automatically loads older messages
+- ✅ Initial load limited to 30 most recent messages
+- ✅ Maintains scroll position when loading more
+- ✅ Removed "message sent" toast (messages appear instantly)
+
+**UI/UX:**
+
+- ✅ Modern glassmorphism design with backdrop blur
+- ✅ Gradient buttons and smooth animations
+- ✅ Enhanced scrollbar with gradient colors
+- ✅ Animated background with radial gradients
+- ✅ Glass effect on all cards, modals, and containers
+- ✅ Hover effects with scale transforms
+- ✅ Improved loading spinner with gradient border
+
+**Real-Time Features:**
+
+- ✅ Zero polling achieved (0 API requests when idle)
+- ✅ WebSocket handles all real-time updates
+- ✅ Contact request notifications via WebSocket
+- ✅ Message delivery/read confirmations
+- ✅ Presence updates broadcast to contacts
+- ✅ Typing indicators with 3-second timeout
 
 ### Known Behavior
 
-- **Session expires on refresh**: For security, the decrypted private key is only kept in memory. When you refresh the page, you must login again to decrypt messages.
-- **Messages persist**: All messages are stored on the server and will load when you open a conversation (after logging in).
+- **Session persists on refresh**: Passphrase stored in sessionStorage allows automatic key restoration
+- **Tab close clears session**: For security, closing the tab clears the passphrase
+- **Messages load on demand**: Initial load shows 30 messages, scroll up for more
+- **Real-time delivery**: Messages appear instantly via WebSocket, no polling
+
+### Architecture Highlights
+
+**Security:**
+
+- Private keys always encrypted with passphrase
+- Passphrase stored in sessionStorage (cleared on tab close)
+- Private key cached in memory + auto-restored on refresh
+- Zero-trust: server cannot decrypt messages or keys
+- Two-layer authentication prevents unauthorized access
+
+**Performance:**
+
+- Zero polling (0 background requests)
+- WebSocket for all real-time updates
+- Infinite scroll prevents memory overflow
+- Efficient message loading (30 at a time)
+- Optimized re-renders with Zustand
+
+**User Experience:**
+
+- Modern glassmorphism design
+- Smooth animations and transitions
+- Instant message delivery
+- Auto-scroll to new messages
+- Loading indicators for better feedback
 
 ### Key Conversion
 

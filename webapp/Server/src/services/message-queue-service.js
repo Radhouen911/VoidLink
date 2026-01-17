@@ -109,9 +109,7 @@ class MessageQueueService {
         return;
       }
 
-      console.log(
-        `Processing queue for ${usersWithQueue.length} online users`
-      );
+      console.log(`Processing queue for ${usersWithQueue.length} online users`);
 
       for (const user of usersWithQueue) {
         await this.deliverQueuedMessages(user.recipient_crypto_id);
@@ -135,10 +133,6 @@ class MessageQueueService {
       if (queuedMessages.length === 0) {
         return;
       }
-
-      console.log(
-        `Delivering ${queuedMessages.length} queued messages to ${recipientCryptoId}`
-      );
 
       // Get sender usernames for the messages
       const messageDetails = await this.enrichMessagesWithSenderInfo(
@@ -174,10 +168,6 @@ class MessageQueueService {
             // Mark as delivered in database
             await db.markMessageDelivered(message.message_id, message.queue_id);
             deliveredCount++;
-
-            console.log(
-              `Delivered queued message ${message.message_id} to ${recipientCryptoId}`
-            );
           } else {
             // User went offline during processing
             await db.markMessageFailed(
@@ -201,9 +191,11 @@ class MessageQueueService {
         }
       }
 
-      console.log(
-        `Queue delivery complete for ${recipientCryptoId}: ${deliveredCount} delivered, ${failedCount} failed`
-      );
+      if (deliveredCount > 0 || failedCount > 0) {
+        console.log(
+          `Queue delivery for ${recipientCryptoId}: ${deliveredCount} delivered, ${failedCount} failed`
+        );
+      }
     } catch (error) {
       console.error(
         `Error delivering queued messages for ${recipientCryptoId}:`,
@@ -246,14 +238,14 @@ class MessageQueueService {
       return queuedMessages.map((message) => ({
         ...message,
         sender_username: senderMap.get(message.sender_crypto_id) || "Unknown",
-        queue_id: message.id, // Add queue ID for tracking
+        // queue_id is already in the message from getQueuedMessages
       }));
     } catch (error) {
       console.error("Error enriching messages with sender info:", error);
       return queuedMessages.map((message) => ({
         ...message,
         sender_username: "Unknown",
-        queue_id: message.id,
+        // queue_id is already in the message from getQueuedMessages
       }));
     }
   }
@@ -264,8 +256,6 @@ class MessageQueueService {
    */
   async onUserOnline(cryptoProfileId) {
     try {
-      console.log(`User ${cryptoProfileId} came online, checking queue...`);
-
       // Update presence status
       await db.updateUserPresence(cryptoProfileId, "online", 1);
 

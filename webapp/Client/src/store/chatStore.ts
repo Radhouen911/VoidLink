@@ -10,8 +10,11 @@ export interface Message {
   decryptedContent?: string;
   messageType: string;
   delivered: boolean;
+  read?: boolean;
   createdAt: string;
   deliveredAt?: string;
+  readAt?: string;
+  status?: 'sending' | 'sent' | 'failed';
 }
 
 export interface Conversation {
@@ -32,6 +35,8 @@ interface ChatState {
   addMessage: (username: string, message: Message) => void;
   addMessages: (username: string, messages: Message[]) => void;
   updateMessageStatus: (messageId: string, delivered: boolean) => void;
+  updateMessageRead: (messageId: string) => void;
+  updateMessageId: (oldId: string, newId: string, status: "sent" | "failed") => void; // New action
   setUserOnline: (username: string, isOnline: boolean) => void;
   setUserTyping: (username: string, isTyping: boolean) => void;
   markConversationRead: (username: string) => void;
@@ -57,7 +62,19 @@ export const useChatStore = create<ChatState>((set, get) => ({
       isTyping: false,
     };
 
+    // Check for duplicates
+    const exists = conversation.messages.some((m) => m.id === message.id);
+    if (exists) {
+      return; // Don't add duplicate
+    }
+
     conversation.messages.push(message);
+
+    // Enforce chronological sorting on every insertion to prevent jitter
+    conversation.messages.sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
+
     conversation.lastMessage = message;
 
     // Increment unread count if not active conversation
@@ -79,10 +96,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
       isTyping: false,
     };
 
-    // Replace messages instead of prepending to avoid duplicates when polling
-    // Keep track of existing message IDs
+    // Robust de-duplication
     const existingIds = new Set(conversation.messages.map((m) => m.id));
     const newMessages = messages.filter((m) => !existingIds.has(m.id));
+
+    if (newMessages.length === 0) return; // Nothing to add
 
     // Add only new messages
     conversation.messages = [...conversation.messages, ...newMessages];
@@ -111,7 +129,42 @@ export const useChatStore = create<ChatState>((set, get) => ({
         message.delivered = delivered;
         if (delivered) {
           message.deliveredAt = new Date().toISOString();
+          if (message.status) message.status = "sent"; // Update status if it exists
         }
+      }
+    });
+
+    set({ conversations });
+  },
+
+  updateMessageId: (oldId, newId, status) => {
+    const conversations = new Map(get().conversations);
+
+    conversations.forEach((conversation) => {
+      const index = conversation.messages.findIndex((m) => m.id === oldId);
+      if (index !== -1) {
+        const msg = conversation.messages[index];
+        msg.id = newId;
+        msg.status = status;
+
+        // Re-sort if needed (though typically timestamp doesn't change much)
+        conversation.messages.sort(
+          (a, b) =>
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+      }
+    });
+    set({ conversations });
+  },
+
+  updateMessageRead: (messageId) => {
+    const conversations = new Map(get().conversations);
+
+    conversations.forEach((conversation) => {
+      const message = conversation.messages.find((m) => m.id === messageId);
+      if (message) {
+        message.read = true;
+        message.readAt = new Date().toISOString();
       }
     });
 

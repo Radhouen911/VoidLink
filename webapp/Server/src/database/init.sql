@@ -73,9 +73,12 @@ CREATE TABLE IF NOT EXISTS contacts (
     contact_crypto_id UUID NOT NULL REFERENCES crypto_profiles(id) ON DELETE CASCADE,
     status VARCHAR(20) DEFAULT 'pending',
     contact_status VARCHAR(20) DEFAULT 'pending',
+    contact_alias VARCHAR(100),
+    user_declared_verified BOOLEAN DEFAULT FALSE,
     request_message TEXT,
     added_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     accepted_at TIMESTAMP WITH TIME ZONE,
+    last_interaction TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(owner_crypto_id, contact_crypto_id)
@@ -90,6 +93,8 @@ CREATE TABLE IF NOT EXISTS messages (
     message_type VARCHAR(50) DEFAULT 'message',
     delivered BOOLEAN DEFAULT FALSE,
     delivered_at TIMESTAMP WITH TIME ZONE,
+    deleted_by_sender BOOLEAN DEFAULT FALSE,
+    deleted_by_recipient BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 

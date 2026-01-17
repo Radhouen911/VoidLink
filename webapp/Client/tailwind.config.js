@@ -5,16 +5,22 @@ export default {
     extend: {
       colors: {
         void: {
-          black: "#0a0a0f",
-          dark: "#1a1a2e",
-          purple: "#16213e",
-          blue: "#0f3460",
-          accent: "#00d4ff",
-          success: "#00ff88",
-          warning: "#ffaa00",
-          danger: "#ff3366",
-          text: "#e4e4e7",
-          "text-dim": "#a1a1aa",
+          // Modern dark theme - Telegram/Signal inspired
+          black: "#0e1621",
+          dark: "#17212b",
+          purple: "#2b5278",
+          blue: "#0088cc",
+          accent: "#0088cc",
+          success: "#4caf50",
+          warning: "#ff9800",
+          danger: "#f44336",
+          text: "#ffffff",
+          "text-dim": "#8b98a5",
+          "text-secondary": "#6c7883",
+          border: "#2b5278",
+          "border-light": "#1f2c38",
+          hover: "#1f2c38",
+          active: "#2b5278",
         },
       },
       fontFamily: {
@@ -22,16 +28,9 @@ export default {
         mono: ["JetBrains Mono", "monospace"],
         display: ["Space Grotesk", "sans-serif"],
       },
-      animation: {
-        glow: "glow 2s ease-in-out infinite alternate",
-      },
-      keyframes: {
-        glow: {
-          "0%": { boxShadow: "0 0 5px #00d4ff, 0 0 10px #00d4ff" },
-          "100%": {
-            boxShadow: "0 0 10px #00d4ff, 0 0 20px #00d4ff, 0 0 30px #00d4ff",
-          },
-        },
+      spacing: {
+        18: "4.5rem",
+        88: "22rem",
       },
     },
   },

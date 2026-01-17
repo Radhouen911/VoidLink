@@ -112,7 +112,7 @@ router.post("/send", requireBothSessions, async (req, res) => {
 router.get("/conversation/:username", requireBothSessions, async (req, res) => {
   try {
     const { username } = req.params;
-    const { since, limit = 50, offset = 0 } = req.query;
+    const { since, before, limit = 50, offset = 0 } = req.query;
 
     // Find conversation partner's crypto profile
     const partnerResult = await db.query(
@@ -133,9 +133,10 @@ router.get("/conversation/:username", requireBothSessions, async (req, res) => {
     }
 
     const partner = partnerResult.rows[0];
-    const messageLimit = Math.min(parseInt(limit), 100); // Cap at 100 messages
+    const messageLimit = Math.min(parseInt(limit) || 50, 100);
+    const messageOffset = parseInt(offset) || 0;
 
-    // Build query with optional timestamp filter
+    // Build query
     let query = `
       SELECT 
         m.id,
@@ -143,26 +144,22 @@ router.get("/conversation/:username", requireBothSessions, async (req, res) => {
         m.message_type,
         m.delivered,
         m.created_at,
+        m.sender_crypto_id,
+        m.recipient_crypto_id,
         CASE 
           WHEN m.sender_crypto_id = $1 THEN 'sent'
           ELSE 'received'
-        END as direction,
-        CASE 
-          WHEN m.sender_crypto_id = $1 THEN $3
-          ELSE $4
-        END as partner_username
+        END as direction
       FROM messages m
       WHERE (
-        (m.sender_crypto_id = $1 AND m.recipient_crypto_id = $2 AND m.deleted_by_sender = FALSE) OR
-        (m.sender_crypto_id = $2 AND m.recipient_crypto_id = $1 AND m.deleted_by_recipient = FALSE)
+        (m.sender_crypto_id = $1 AND m.recipient_crypto_id = $2) OR
+        (m.sender_crypto_id = $2 AND m.recipient_crypto_id = $1)
       )
     `;
 
     const queryParams = [
       req.cryptoSession.cryptoProfileId,
       partner.crypto_profile_id,
-      req.accountSession.username,
-      username,
     ];
 
     if (since) {
@@ -170,10 +167,15 @@ router.get("/conversation/:username", requireBothSessions, async (req, res) => {
       queryParams.push(new Date(since));
     }
 
+    if (before) {
+      query += ` AND m.created_at < $${queryParams.length + 1}`;
+      queryParams.push(new Date(before));
+    }
+
     query += ` ORDER BY m.created_at DESC LIMIT $${
       queryParams.length + 1
     } OFFSET $${queryParams.length + 2}`;
-    queryParams.push(messageLimit, parseInt(offset));
+    queryParams.push(messageLimit, messageOffset);
 
     const result = await db.query(query, queryParams);
 
@@ -189,6 +191,7 @@ router.get("/conversation/:username", requireBothSessions, async (req, res) => {
         partner_username: username,
         messages_count: result.rows.length,
         since_timestamp: since || null,
+        before_timestamp: before || null,
       }
     );
 
@@ -197,11 +200,13 @@ router.get("/conversation/:username", requireBothSessions, async (req, res) => {
       data: {
         conversation: result.rows.map((msg) => ({
           messageId: msg.id,
-          encryptedPayload: msg.encrypted_payload, // Opaque to server
+          encryptedPayload: msg.encrypted_payload,
           messageType: msg.message_type,
           direction: msg.direction,
           delivered: msg.delivered,
           createdAt: msg.created_at,
+          senderId: msg.sender_crypto_id,
+          recipientId: msg.recipient_crypto_id,
         })),
         partner: username,
         totalMessages: result.rows.length,
@@ -222,7 +227,8 @@ router.get("/inbox", requireBothSessions, async (req, res) => {
   try {
     const { limit = 50, offset = 0, undelivered_only = false } = req.query;
 
-    const messageLimit = Math.min(parseInt(limit), 100);
+    const messageLimit = Math.min(parseInt(limit) || 50, 100);
+    const messageOffset = parseInt(offset) || 0;
 
     let query = `
       SELECT 
@@ -235,7 +241,7 @@ router.get("/inbox", requireBothSessions, async (req, res) => {
       FROM messages m
       INNER JOIN crypto_profiles sender_cp ON m.sender_crypto_id = sender_cp.id
       INNER JOIN accounts sender_account ON sender_cp.account_id = sender_account.id
-      WHERE m.recipient_crypto_id = $1 AND m.deleted_by_recipient = FALSE
+      WHERE m.recipient_crypto_id = $1
     `;
 
     const queryParams = [req.cryptoSession.cryptoProfileId];
@@ -244,10 +250,8 @@ router.get("/inbox", requireBothSessions, async (req, res) => {
       query += ` AND m.delivered = FALSE`;
     }
 
-    query += ` ORDER BY m.created_at DESC LIMIT $${
-      queryParams.length + 1
-    } OFFSET $${queryParams.length + 2}`;
-    queryParams.push(messageLimit, parseInt(offset));
+    query += ` ORDER BY m.created_at DESC LIMIT $2 OFFSET $3`;
+    queryParams.push(messageLimit, messageOffset);
 
     const result = await db.query(query, queryParams);
 
