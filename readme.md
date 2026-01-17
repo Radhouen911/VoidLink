@@ -2,6 +2,11 @@
 
 > _Zero-trust secure messaging system where privacy is mathematically guaranteed, not policy-dependent_
 
+## 🌐 **Live Demo**
+
+**Try VoidLink now:** [https://radhouen911.github.io/VoidLink/](https://radhouen911.github.io/VoidLink/)  
+_Click "Decrypt & Login" to explore the interface with mock data - no setup required!_
+
 [![Academic Project](https://img.shields.io/badge/Type-Academic%20Project-blue.svg)](https://github.com/your-username/voidlink)
 [![Zero Trust](https://img.shields.io/badge/Security-Zero%20Trust-green.svg)](https://github.com/your-username/voidlink)
 [![End-to-End Encryption](https://img.shields.io/badge/Encryption-E2EE-red.svg)](https://github.com/your-username/voidlink)
