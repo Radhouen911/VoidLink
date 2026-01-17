@@ -6,9 +6,11 @@ import { AuthProvider, useAuthContext } from "./contexts/AuthContext";
 import { Chat } from "./pages/Chat";
 import { Landing } from "./pages/Landing";
 import { Login } from "./pages/Login";
+import { MockChat } from "./pages/MockChat";
 import { NotFound } from "./pages/NotFound";
 import { PrivacyPolicy } from "./pages/PrivacyPolicy";
 import { Register } from "./pages/Register";
+import { IS_DEMO_MODE } from "./utils/constants";
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
   children,
