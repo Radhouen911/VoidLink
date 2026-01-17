@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { SecureStorage } from "../crypto/storage";
-import { api } from "../services/index";
+import { api, webSocketService } from "../services/index";
 import { useChatStore } from "../store/chatStore";
 import { useContactStore } from "../store/contactStore";
 
