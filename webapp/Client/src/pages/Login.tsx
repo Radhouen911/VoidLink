@@ -16,34 +16,17 @@ export const Login: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!username || !password || !passphrase) {
-      showToast("Please fill in all fields", "error");
-      return;
-    }
-
     setIsLoading(true);
     try {
-      showToast("Authenticating...", "info");
-      await authService.login(username, password, passphrase);
-      showToast("Login successful!", "success");
+      showToast("Logging into demo account...", "info");
+      // Always log in as demo user regardless of input
+      await authService.login("demo", "demo123", "demo");
+      showToast("Welcome to VoidLink Demo!", "success");
       showToast("Redirecting to chat...", "info");
       setTimeout(() => navigate("/chat"), 2000);
     } catch (error: any) {
       console.error("Login error:", error);
-
-      let errorMessage = "Login failed. Please check your credentials.";
-
-      if (error.message.includes("Incorrect passphrase")) {
-        errorMessage = "Incorrect passphrase. Please try again.";
-      } else if (error.message.includes("No backup found")) {
-        errorMessage = "No backup found. You may need to register first.";
-      } else if (error.message.includes("Invalid username or password")) {
-        errorMessage = "Invalid username or password.";
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-
-      showToast(errorMessage, "error");
+      showToast("Demo login failed. Please try again.", "error");
     } finally {
       setIsLoading(false);
     }
@@ -111,7 +94,7 @@ export const Login: React.FC = () => {
           Welcome Back
         </h1>
         <p className="text-center text-white/70 mb-8 text-sm">
-          Login from any device
+          Demo Mode - Click "Enter Demo" to explore VoidLink
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -137,7 +120,7 @@ export const Login: React.FC = () => {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Username"
+                placeholder="Demo User (auto-filled)"
                 disabled={isLoading}
                 className="input-underline flex-1 text-white"
               />
@@ -166,7 +149,7 @@ export const Login: React.FC = () => {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
+                placeholder="Demo Password (auto-filled)"
                 disabled={isLoading}
                 className="input-underline flex-1 text-white"
               />
@@ -195,7 +178,7 @@ export const Login: React.FC = () => {
                 type="password"
                 value={passphrase}
                 onChange={(e) => setPassphrase(e.target.value)}
-                placeholder="Encryption Passphrase"
+                placeholder="Demo Passphrase (auto-filled)"
                 disabled={isLoading}
                 className="input-underline flex-1 text-white"
               />
@@ -210,7 +193,7 @@ export const Login: React.FC = () => {
             disabled={isLoading}
             className="w-full btn-gradient py-3 rounded-xl text-base font-semibold"
           >
-            Decrypt & Login
+            Enter Demo
           </button>
         </form>
 
