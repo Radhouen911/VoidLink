@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loading } from "../components/common/Loading";
 import { useToast } from "../components/common/Toast";
-import { authService } from "../services";
 
 export const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -16,18 +15,15 @@ export const Login: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // No validation - always proceed with demo login
+    // No validation - always proceed with demo
     setIsLoading(true);
     try {
-      showToast("Logging into demo account...", "info");
-      // Always log in as demo user regardless of input (even if fields are empty)
-      await authService.login("demo", "demo123", "demo");
-      showToast("Welcome to VoidLink Demo!", "success");
-      showToast("Redirecting to chat...", "info");
-      setTimeout(() => navigate("/chat"), 2000);
+      showToast("Entering demo mode...", "info");
+      // In demo mode, skip all authentication and go directly to chat
+      setTimeout(() => navigate("/chat"), 1500);
     } catch (error: any) {
-      console.error("Login error:", error);
-      showToast("Demo login failed. Please try again.", "error");
+      console.error("Demo error:", error);
+      showToast("Demo failed. Please try again.", "error");
     } finally {
       setIsLoading(false);
     }
@@ -37,11 +33,11 @@ export const Login: React.FC = () => {
     return (
       <div className="fixed inset-0 auth-gradient-bg flex items-center justify-center px-4">
         <div className="glass-auth-strong rounded-3xl max-w-md w-full p-8 text-center animate-fade-scale-in">
-          <Loading size="lg" text="Logging in..." />
+          <Loading size="lg" text="Loading demo..." />
           <div className="mt-6 space-y-2 text-sm text-white/80">
-            <p>🔑 Fetching your encrypted keys...</p>
-            <p>🔓 Decrypting with your passphrase...</p>
-            <p>✓ Authenticating...</p>
+            <p>🎨 Loading VoidLink interface...</p>
+            <p>🚀 Preparing demo environment...</p>
+            <p>✨ Almost ready...</p>
           </div>
         </div>
       </div>

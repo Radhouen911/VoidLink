@@ -27,12 +27,12 @@ const mockMessages = [
  * Mock decrypt a message for display in demo mode
  * Always succeeds and returns readable content
  */
-export function decryptMessageForDisplay(
+export const decryptMessageForDisplay = (
   encryptedPayload: string,
   senderPublicKey: string,
   recipientPublicKey: string,
   currentUserPublicKey: string,
-): DecryptionResult {
+): DecryptionResult => {
   // In demo mode, always succeed with mock content
 
   // Generate consistent mock content based on payload hash
@@ -44,19 +44,22 @@ export function decryptMessageForDisplay(
     success: true,
     content: mockContent,
   };
-}
+};
 
 /**
  * Mock batch decrypt multiple messages
  */
-export function batchDecryptMessages<
+export const batchDecryptMessages = <
   T extends {
     encryptedPayload: string;
     senderId: string;
     recipientId: string;
     decryptedContent?: string;
   },
->(messages: T[], currentUserPublicKey: string): T[] {
+>(
+  messages: T[],
+  currentUserPublicKey: string,
+): T[] => {
   return messages.map((msg, index) => {
     // Skip if already decrypted
     if (msg.decryptedContent && msg.decryptedContent !== "[Encrypted]") {
@@ -71,4 +74,4 @@ export function batchDecryptMessages<
       decryptedContent: mockContent,
     };
   });
-}
+};
