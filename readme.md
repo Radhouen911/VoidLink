@@ -7,9 +7,9 @@
 **Try VoidLink now:** [https://radhouen911.github.io/VoidLink/](https://radhouen911.github.io/VoidLink/)  
 _Click "Decrypt & Login" to explore the interface with mock data - no setup required!_
 
-[![Academic Project](https://img.shields.io/badge/Type-Academic%20Project-blue.svg)](https://github.com/your-username/voidlink)
-[![Zero Trust](https://img.shields.io/badge/Security-Zero%20Trust-green.svg)](https://github.com/your-username/voidlink)
-[![End-to-End Encryption](https://img.shields.io/badge/Encryption-E2EE-red.svg)](https://github.com/your-username/voidlink)
+[![Academic Project](https://img.shields.io/badge/Type-Academic%20Project-blue.svg)](https://github.com/radhouen911/voidlink)
+[![Zero Trust](https://img.shields.io/badge/Security-Zero%20Trust-green.svg)](https://github.com/radhouen911/voidlink)
+[![End-to-End Encryption](https://img.shields.io/badge/Encryption-E2EE-red.svg)](https://github.com/radhouen911/voidlink)
 
 ## 🎯 What's VoidLink All About?
 
@@ -32,7 +32,7 @@ VoidLink is a **proof-of-concept secure messaging system** that demonstrates how
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/your-username/voidlink.git
+   git clone https://github.com/radhouen911/voidlink.git
    cd voidlink
    ```
 
