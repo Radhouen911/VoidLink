@@ -1,8 +1,10 @@
+export const IS_DEMO_MODE = import.meta.env.VITE_DEMO_MODE === "true";
 export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 export const WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:5000/ws";
 
 // Debug: Log the URLs being used
-console.log("VoidLink API Configuration:");
+console.log("VoidLink Configuration:");
+console.log("DEMO_MODE:", IS_DEMO_MODE);
 console.log("API_URL:", API_URL);
 console.log("WS_URL:", WS_URL);
 

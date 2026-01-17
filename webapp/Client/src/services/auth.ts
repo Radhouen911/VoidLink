@@ -6,7 +6,7 @@ import {
 import { signChallenge } from "../crypto/signing";
 import { SecureStorage } from "../crypto/storage";
 import { useAuthStore } from "../store/authStore";
-import { api } from "./api";
+import { api } from "./index";
 
 // In-memory storage for decrypted private key (cleared on page refresh)
 let sessionPrivateKey: string | null = null;
@@ -99,7 +99,7 @@ export class AuthService {
       } catch (error) {
         console.error("Encryption error:", error);
         throw new Error(
-          "Failed to encrypt private key: " + (error as Error).message
+          "Failed to encrypt private key: " + (error as Error).message,
         );
       }
 
@@ -228,7 +228,7 @@ export class AuthService {
 
         if (!privateKey) {
           throw new Error(
-            "Failed to decrypt server backup. Incorrect passphrase."
+            "Failed to decrypt server backup. Incorrect passphrase.",
           );
         }
 
@@ -253,7 +253,7 @@ export class AuthService {
           error.message?.includes("No backup found")
         ) {
           console.log(
-            "Account exists but no keys found. Attempting repair/setup..."
+            "Account exists but no keys found. Attempting repair/setup...",
           );
 
           // Check if public key exists (if it does, we lost the private key = FATAL)
@@ -261,7 +261,7 @@ export class AuthService {
             const userInfo: any = await api.getUserByUsername(username);
             if (userInfo.data?.publicKey) {
               throw new Error(
-                "Account exists with a PUBLIC key, but you have no backup of the PRIVATE key. This account is unrecoverable."
+                "Account exists with a PUBLIC key, but you have no backup of the PRIVATE key. This account is unrecoverable.",
               );
             }
           } catch (e) {

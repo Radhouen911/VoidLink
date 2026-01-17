@@ -9,10 +9,9 @@ import { encryptMessage } from "../crypto/encryption";
 import { SecureStorage } from "../crypto/storage";
 import { useAuth } from "../hooks/useAuth";
 import { useWebSocket } from "../hooks/useWebSocket";
-import { api } from "../services/api";
 import { authService, getSessionPrivateKey } from "../services/auth";
+import { api } from "../services/index";
 import { decryptMessageForDisplay } from "../services/messageDecryption";
-import { websocket } from "../services/websocket";
 import { useAuthStore } from "../store/authStore";
 import { Message, useChatStore } from "../store/chatStore";
 import { useContactStore } from "../store/contactStore";
@@ -72,7 +71,7 @@ export const Chat: React.FC = () => {
       if (activeConversation && typingTimeout) {
         clearTimeout(typingTimeout);
         setTypingTimeout(null);
-        websocket.send("typing_stop", {
+        webSocketService.send("typing_stop", {
           recipientUsername: activeConversation,
         });
       }
@@ -130,7 +129,7 @@ export const Chat: React.FC = () => {
           activeConversation,
           undefined, // since
           oldestTimestamp, // before
-          30 // Load 30 more messages
+          30, // Load 30 more messages
         );
         const messagesData = response.data?.conversation || [];
 
@@ -145,7 +144,7 @@ export const Chat: React.FC = () => {
         // CRITICAL: Verify contact has valid publicKey before processing messages
         if (!contact.publicKey) {
           console.error(
-            `Contact ${activeConversation} has no publicKey, cannot decrypt messages`
+            `Contact ${activeConversation} has no publicKey, cannot decrypt messages`,
           );
           return;
         }
@@ -165,7 +164,7 @@ export const Chat: React.FC = () => {
             msg.encryptedPayload,
             senderId,
             recipientId,
-            user?.publicKey || ""
+            user?.publicKey || "",
           );
 
           return {
@@ -230,7 +229,7 @@ export const Chat: React.FC = () => {
 
     const conversation = conversations.get(activeConversation);
     const hasSessionExpiredMessages = conversation?.messages.some(
-      (m) => m.decryptedContent === "[Session expired - login to decrypt]"
+      (m) => m.decryptedContent === "[Session expired - login to decrypt]",
     );
 
     // If we have session expired messages and private key is missing, show prompt
@@ -246,7 +245,7 @@ export const Chat: React.FC = () => {
 
     const conversation = conversations.get(activeConversation);
     const needsDecryption = conversation?.messages.some(
-      (m) => !m.decryptedContent || m.decryptedContent === "[Encrypted]"
+      (m) => !m.decryptedContent || m.decryptedContent === "[Encrypted]",
     );
 
     if (needsDecryption && user?.publicKey) {
@@ -259,7 +258,7 @@ export const Chat: React.FC = () => {
           msg.encryptedPayload,
           msg.senderId,
           msg.recipientId,
-          user.publicKey
+          user.publicKey,
         );
 
         return { ...msg, decryptedContent: decryptionResult.content };
@@ -286,7 +285,7 @@ export const Chat: React.FC = () => {
         username,
         undefined,
         undefined,
-        30
+        30,
       ); // Load only 30 most recent
       const messagesData = response.data?.conversation || [];
 
@@ -300,14 +299,14 @@ export const Chat: React.FC = () => {
         // CRITICAL: If contact missing or has no publicKey, cannot decrypt
         if (!contact) {
           console.error(
-            `Contact ${username} not found in store, cannot load conversation`
+            `Contact ${username} not found in store, cannot load conversation`,
           );
           return;
         }
 
         if (!contact.publicKey) {
           console.error(
-            `Contact ${username} has no publicKey, cannot decrypt messages`
+            `Contact ${username} has no publicKey, cannot decrypt messages`,
           );
           return;
         }
@@ -326,7 +325,7 @@ export const Chat: React.FC = () => {
             msg.encryptedPayload,
             senderId,
             recipientId,
-            user?.publicKey || ""
+            user?.publicKey || "",
           );
 
           return {
@@ -348,7 +347,7 @@ export const Chat: React.FC = () => {
         // Add messages to store (backend returns newest first, reverse for chronological)
         addMessages(username, mappedMessages.reverse());
         console.log(
-          `Added ${mappedMessages.length} messages to store for ${username}`
+          `Added ${mappedMessages.length} messages to store for ${username}`,
         );
 
         // If we got less than 30, there are no more messages
@@ -409,14 +408,14 @@ export const Chat: React.FC = () => {
 
         if (!contact) {
           console.warn(
-            `Inbox: Contact ${partner} not found, skipping ${msgs.length} messages`
+            `Inbox: Contact ${partner} not found, skipping ${msgs.length} messages`,
           );
           continue; // Skip this conversation
         }
 
         if (!contact.publicKey) {
           console.warn(
-            `Inbox: Contact ${partner} has no publicKey, skipping ${msgs.length} messages`
+            `Inbox: Contact ${partner} has no publicKey, skipping ${msgs.length} messages`,
           );
           continue; // Skip this conversation
         }
@@ -431,7 +430,7 @@ export const Chat: React.FC = () => {
             msg.encryptedPayload,
             senderId,
             recipientId,
-            user?.publicKey || ""
+            user?.publicKey || "",
           );
 
           return {
@@ -496,7 +495,7 @@ export const Chat: React.FC = () => {
         console.log(
           `Contact ${c.username}: publicKey=${
             c.publicKey ? "present" : "MISSING"
-          } (${c.publicKey?.length || 0} chars)`
+          } (${c.publicKey?.length || 0} chars)`,
         );
       });
 
@@ -508,7 +507,7 @@ export const Chat: React.FC = () => {
       } else {
         showToast(
           "✗ Failed to load contacts: " + (error.message || "Unknown error"),
-          "error"
+          "error",
         );
       }
     } finally {
@@ -553,7 +552,9 @@ export const Chat: React.FC = () => {
 
     // Send typing_start when user starts typing
     if (value.length > 0) {
-      websocket.send("typing_start", { recipientUsername: activeConversation });
+      webSocketService.send("typing_start", {
+        recipientUsername: activeConversation,
+      });
 
       // Clear existing timeout
       if (typingTimeout) {
@@ -562,7 +563,7 @@ export const Chat: React.FC = () => {
 
       // Set new timeout to send typing_stop after 3 seconds of inactivity
       const timeout = setTimeout(() => {
-        websocket.send("typing_stop", {
+        webSocketService.send("typing_stop", {
           recipientUsername: activeConversation,
         });
       }, 3000);
@@ -574,7 +575,9 @@ export const Chat: React.FC = () => {
         clearTimeout(typingTimeout);
         setTypingTimeout(null);
       }
-      websocket.send("typing_stop", { recipientUsername: activeConversation });
+      webSocketService.send("typing_stop", {
+        recipientUsername: activeConversation,
+      });
     }
   };
 
@@ -586,7 +589,9 @@ export const Chat: React.FC = () => {
       clearTimeout(typingTimeout);
       setTypingTimeout(null);
     }
-    websocket.send("typing_stop", { recipientUsername: activeConversation });
+    webSocketService.send("typing_stop", {
+      recipientUsername: activeConversation,
+    });
 
     // HARD GATE: Ensure contact with valid publicKey exists
     let contact = contacts.find((c) => c.username === activeConversation);
@@ -632,7 +637,7 @@ export const Chat: React.FC = () => {
       if (!contact.publicKey) {
         showToast(
           "✗ Contact encryption key not available. Please refresh and try again.",
-          "error"
+          "error",
         );
         return;
       }
@@ -642,7 +647,7 @@ export const Chat: React.FC = () => {
     if (!contact.cryptoProfileId) {
       showToast(
         "✗ Contact crypto profile not available. Try refreshing.",
-        "error"
+        "error",
       );
       return;
     }
@@ -687,22 +692,22 @@ export const Chat: React.FC = () => {
       const encryptedPayload = encryptMessage(
         contentToSend,
         contact.publicKey,
-        privateKey
+        privateKey,
       );
 
       // 3. Send via WebSocket
-      const result = await websocket.sendMessage(
+      const result = await webSocketService.sendMessage(
         activeConversation,
         contact.cryptoProfileId,
         encryptedPayload,
-        "message"
+        "message",
       );
 
       // 4. Update with real ID and success status
       updateMessageId(
         tempId,
         result.messageId || Date.now().toString(),
-        "sent"
+        "sent",
       );
 
       // Update store with delivered status if provided immediately
@@ -807,7 +812,7 @@ export const Chat: React.FC = () => {
       console.error("Accept request error:", error);
       showToast(
         "✗ Failed to accept request: " + (error.message || "Unknown error"),
-        "error"
+        "error",
       );
     }
   };
@@ -821,7 +826,7 @@ export const Chat: React.FC = () => {
       console.error("Reject request error:", error);
       showToast(
         "✗ Failed to reject request: " + (error.message || "Unknown error"),
-        "error"
+        "error",
       );
     }
   };
@@ -851,7 +856,7 @@ export const Chat: React.FC = () => {
     // Better UX: Fill input.
     showToast(
       "📝 Message content restored to input. Try sending again.",
-      "info"
+      "info",
     );
   };
 
@@ -896,7 +901,7 @@ export const Chat: React.FC = () => {
                   | "busy"
                   | "offline";
                 useAuthStore.getState().setPresenceStatus(status);
-                websocket.send("presence_update", { status });
+                webSocketService.send("presence_update", { status });
               }}
               className="px-4 py-2 bg-white/10 backdrop-blur-sm rounded-lg text-sm border border-white/30 text-white font-medium focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/30 focus:bg-white/20 active:bg-white/25 cursor-pointer transition-all duration-150 hover:bg-white/15 hover:border-white/40 appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22white%22%3E%3cpath%20fill-rule%3D%22evenodd%22%20d%3D%22M5.293%207.293a1%201%200%20011.414%200L10%2010.586l3.293-3.293a1%201%200%20111.414%201.414l-4%204a1%201%200%2001-1.414%200l-4-4a1%201%200%20010-1.414z%22%20clip-rule%3D%22evenodd%22%2F%3E%3c%2Fsvg%3E')] bg-[length:1.5em_1.5em] bg-[right_0.5rem_center] bg-no-repeat pr-10 shadow-lg"
               style={{
@@ -1022,7 +1027,7 @@ export const Chat: React.FC = () => {
                 const uniqueUsers = new Set<string>();
                 contacts.forEach((c) => uniqueUsers.add(c.username));
                 Array.from(conversations.keys()).forEach((u) =>
-                  uniqueUsers.add(u)
+                  uniqueUsers.add(u),
                 );
 
                 const displayList = Array.from(uniqueUsers).map((username) => {
@@ -1032,8 +1037,8 @@ export const Chat: React.FC = () => {
                   const sortTime = lastMsg?.createdAt
                     ? new Date(lastMsg.createdAt).getTime()
                     : contact?.addedAt
-                    ? new Date(contact.addedAt).getTime()
-                    : 0;
+                      ? new Date(contact.addedAt).getTime()
+                      : 0;
 
                   return {
                     username,
@@ -1110,7 +1115,7 @@ export const Chat: React.FC = () => {
                                   }`}
                                 >
                                   {new Date(
-                                    chat.lastMessage.createdAt
+                                    chat.lastMessage.createdAt,
                                   ).toLocaleTimeString([], {
                                     hour: "2-digit",
                                     minute: "2-digit",
@@ -1232,14 +1237,14 @@ export const Chat: React.FC = () => {
                           new Date(prevMsg.createdAt).toDateString();
 
                       let dateLabel = new Date(
-                        msg.createdAt
+                        msg.createdAt,
                       ).toLocaleDateString();
                       const today = new Date().toDateString();
                       const yesterday = new Date(
-                        Date.now() - 86400000
+                        Date.now() - 86400000,
                       ).toDateString();
                       const messageDate = new Date(
-                        msg.createdAt
+                        msg.createdAt,
                       ).toDateString();
 
                       if (messageDate === today) dateLabel = "Today";
@@ -1257,7 +1262,7 @@ export const Chat: React.FC = () => {
                         messages[index + 1].senderUsername !==
                           msg.senderUsername ||
                         new Date(
-                          messages[index + 1].createdAt
+                          messages[index + 1].createdAt,
                         ).toDateString() !== messageDate;
 
                       return (
@@ -1314,7 +1319,7 @@ export const Chat: React.FC = () => {
                                 <span className="text-[10px]">
                                   {new Date(msg.createdAt).toLocaleTimeString(
                                     [],
-                                    { hour: "2-digit", minute: "2-digit" }
+                                    { hour: "2-digit", minute: "2-digit" },
                                   )}
                                 </span>
                                 {isMe && (
@@ -1323,8 +1328,8 @@ export const Chat: React.FC = () => {
                                       msg.status === "failed"
                                         ? "cursor-pointer hover:scale-110 transition-transform text-void-danger"
                                         : msg.read || msg.delivered
-                                        ? "text-white/80"
-                                        : "text-white/50"
+                                          ? "text-white/80"
+                                          : "text-white/50"
                                     }`}
                                     onClick={(e) => {
                                       if (msg.status === "failed") {
@@ -1336,23 +1341,23 @@ export const Chat: React.FC = () => {
                                       msg.status === "failed"
                                         ? "Click to retry"
                                         : msg.read
-                                        ? "Read"
-                                        : msg.delivered
-                                        ? "Delivered"
-                                        : msg.status === "sending"
-                                        ? "Sending..."
-                                        : "Sent"
+                                          ? "Read"
+                                          : msg.delivered
+                                            ? "Delivered"
+                                            : msg.status === "sending"
+                                              ? "Sending..."
+                                              : "Sent"
                                     }
                                   >
                                     {msg.status === "failed"
                                       ? "✕"
                                       : msg.status === "sending"
-                                      ? "○"
-                                      : msg.read
-                                      ? "✓✓"
-                                      : msg.delivered
-                                      ? "✓"
-                                      : "✓"}
+                                        ? "○"
+                                        : msg.read
+                                          ? "✓✓"
+                                          : msg.delivered
+                                            ? "✓"
+                                            : "✓"}
                                   </span>
                                 )}
                               </div>
@@ -1513,7 +1518,7 @@ export const Chat: React.FC = () => {
           setShowPassphrasePrompt(false);
           showToast(
             "You can re-enter your passphrase anytime to decrypt messages.",
-            "info"
+            "info",
           );
         }}
         onReAuthenticate={async (passphrase: string) => {

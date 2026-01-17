@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { SecureStorage } from "../crypto/storage";
-import { api } from "../services/api";
-import { websocket } from "../services/websocket";
+import { api } from "../services/index";
 import { useChatStore } from "../store/chatStore";
 import { useContactStore } from "../store/contactStore";
 
@@ -9,13 +8,13 @@ export const useWebSocket = () => {
   const [isConnected, setIsConnected] = useState(false);
   const addMessage = useChatStore((state) => state.addMessage);
   const updateMessageStatus = useChatStore(
-    (state) => state.updateMessageStatus
+    (state) => state.updateMessageStatus,
   );
   const updateMessageRead = useChatStore((state) => state.updateMessageRead);
   const setUserOnline = useChatStore((state) => state.setUserOnline);
   const setUserTyping = useChatStore((state) => state.setUserTyping);
   const updateContactStatus = useContactStore(
-    (state) => state.updateContactStatus
+    (state) => state.updateContactStatus,
   );
 
   // Track typing timeouts to prevent race conditions
@@ -23,7 +22,7 @@ export const useWebSocket = () => {
 
   useEffect(() => {
     // Connect to WebSocket
-    websocket
+    webSocketService
       .connect()
       .then(() => setIsConnected(true))
       .catch((error) => {
@@ -47,7 +46,7 @@ export const useWebSocket = () => {
         console.warn(
           "Sender not in contacts:",
           senderUsername,
-          "- attempting to fetch info"
+          "- attempting to fetch info",
         );
 
         try {
@@ -66,7 +65,7 @@ export const useWebSocket = () => {
             };
           } else {
             console.error(
-              `Could not fetch public key for ${senderUsername}. Dropping message.`
+              `Could not fetch public key for ${senderUsername}. Dropping message.`,
             );
             return;
           }
@@ -94,14 +93,14 @@ export const useWebSocket = () => {
               const decrypted = decryptMessage(
                 data.encryptedPayload,
                 senderContact.publicKey,
-                privateKey
+                privateKey,
               );
               if (decrypted) {
                 decryptedContent = decrypted;
               } else {
                 console.warn(
                   "Decryption returned null for message:",
-                  data.messageId
+                  data.messageId,
                 );
               }
             } else {
@@ -125,12 +124,16 @@ export const useWebSocket = () => {
           });
 
           // ALWAYS send delivery confirmation
-          websocket.send("message_delivered", { messageId: data.messageId });
+          webSocketService.send("message_delivered", {
+            messageId: data.messageId,
+          });
 
           // IF this is the active conversation, send READ confirmation immediately
           const { activeConversation } = useChatStore.getState();
           if (activeConversation === senderUsername) {
-            websocket.send("message_read", { messageId: data.messageId });
+            webSocketService.send("message_read", {
+              messageId: data.messageId,
+            });
           }
         } catch (error) {
           console.error("Failed to handle message:", error);
@@ -180,7 +183,7 @@ export const useWebSocket = () => {
         useContactStore.getState().setPendingRequests(mappedRequests);
 
         console.log(
-          `Loaded ${mappedRequests.length} pending requests via WebSocket`
+          `Loaded ${mappedRequests.length} pending requests via WebSocket`,
         );
       } catch (error) {
         console.error("Failed to reload pending requests:", error);
@@ -242,7 +245,7 @@ export const useWebSocket = () => {
       // Find contact by cryptoProfileId
       const { contacts } = useContactStore.getState();
       const contact = contacts.find(
-        (c) => c.cryptoProfileId === cryptoProfileId
+        (c) => c.cryptoProfileId === cryptoProfileId,
       );
 
       if (contact) {
@@ -288,21 +291,24 @@ export const useWebSocket = () => {
     };
 
     // Register handlers
-    websocket.on("message_received", handleNewMessage);
-    // websocket.on("new_message", handleNewMessage); // Removed legacy event listener
-    websocket.on("message_delivered", handleMessageDelivered);
-    websocket.on("message_delivery_confirmed", handleDeliveryConfirmed);
-    websocket.on("message_read_confirmed", handleReadConfirmed);
-    websocket.on("presence_update", handlePresenceUpdate);
-    websocket.on("typing_start", handleTypingStart);
-    websocket.on("typing_stop", handleTypingStop);
-    websocket.on("contact_request_received", handleContactRequestReceived);
-    websocket.on("contact_accepted", handleContactAccepted);
+    webSocketService.on("message_received", handleNewMessage);
+    // webSocketService.on("new_message", handleNewMessage); // Removed legacy event listener
+    webSocketService.on("message_delivered", handleMessageDelivered);
+    webSocketService.on("message_delivery_confirmed", handleDeliveryConfirmed);
+    webSocketService.on("message_read_confirmed", handleReadConfirmed);
+    webSocketService.on("presence_update", handlePresenceUpdate);
+    webSocketService.on("typing_start", handleTypingStart);
+    webSocketService.on("typing_stop", handleTypingStop);
+    webSocketService.on(
+      "contact_request_received",
+      handleContactRequestReceived,
+    );
+    webSocketService.on("contact_accepted", handleContactAccepted);
 
     // Set up ping/pong keep-alive (every 30 seconds)
     const pingInterval = setInterval(() => {
-      if (websocket.isConnected()) {
-        websocket.send("ping", {});
+      if (webSocketService.isConnected()) {
+        webSocketService.send("ping", {});
       }
     }, 30000);
 
@@ -314,17 +320,23 @@ export const useWebSocket = () => {
       typingTimeouts.forEach((timeout) => clearTimeout(timeout));
       typingTimeouts.clear();
 
-      websocket.off("message_received", handleNewMessage);
-      // websocket.off("new_message", handleNewMessage);
-      websocket.off("message_delivered", handleMessageDelivered);
-      websocket.off("message_delivery_confirmed", handleDeliveryConfirmed);
-      websocket.off("message_read_confirmed", handleReadConfirmed);
-      websocket.off("presence_update", handlePresenceUpdate);
-      websocket.off("typing_start", handleTypingStart);
-      websocket.off("typing_stop", handleTypingStop);
-      websocket.off("contact_request_received", handleContactRequestReceived);
-      websocket.off("contact_accepted", handleContactAccepted);
-      websocket.disconnect();
+      webSocketService.off("message_received", handleNewMessage);
+      // webSocketService.off("new_message", handleNewMessage);
+      webSocketService.off("message_delivered", handleMessageDelivered);
+      webSocketService.off(
+        "message_delivery_confirmed",
+        handleDeliveryConfirmed,
+      );
+      webSocketService.off("message_read_confirmed", handleReadConfirmed);
+      webSocketService.off("presence_update", handlePresenceUpdate);
+      webSocketService.off("typing_start", handleTypingStart);
+      webSocketService.off("typing_stop", handleTypingStop);
+      webSocketService.off(
+        "contact_request_received",
+        handleContactRequestReceived,
+      );
+      webSocketService.off("contact_accepted", handleContactAccepted);
+      webSocketService.disconnect();
       setIsConnected(false);
     };
   }, [
@@ -338,22 +350,22 @@ export const useWebSocket = () => {
 
   const sendMessage = useCallback(
     (recipientUsername: string, content: string) => {
-      websocket.send("send_message", {
+      webSocketService.send("send_message", {
         recipientUsername,
         content,
       });
     },
-    []
+    [],
   );
 
   const sendTypingIndicator = useCallback(
     (recipientUsername: string, isTyping: boolean) => {
-      websocket.send("typing_indicator", {
+      webSocketService.send("typing_indicator", {
         recipientUsername,
         isTyping,
       });
     },
-    []
+    [],
   );
 
   return {
