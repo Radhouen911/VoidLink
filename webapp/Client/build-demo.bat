@@ -4,7 +4,7 @@ echo Building VoidLink Demo for GitHub Pages...
 REM Copy demo environment
 copy .env.demo .env
 
-REM Build with GitHub Pages config
+REM Build with GitHub Pages config (outputs to repo root)
 npx vite build --config vite.config.gh-pages.ts
 
 REM Restore original environment
@@ -14,5 +14,6 @@ if exist .env.example (
     del .env
 )
 
-echo Demo build complete! Files are in dist/ folder.
+echo Demo build complete! Files are in repository root.
+echo Remember to commit and push the updated index.html and assets/
 pause

@@ -5,8 +5,12 @@ export default defineConfig({
   plugins: [react()],
   base: "/VoidLink/",
   build: {
-    outDir: "../../gh-pages-dist",
-    emptyOutDir: true,
+    outDir: "../../", // Output directly to repository root
+    emptyOutDir: false, // Don't empty the entire repo
+    assetsDir: "assets", // Keep assets in assets folder
+  },
+  define: {
+    "import.meta.env.VITE_DEMO_MODE": '"true"',
   },
   server: {
     host: "0.0.0.0",
